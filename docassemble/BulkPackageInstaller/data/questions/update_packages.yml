@@ -1,0 +1,59 @@
+metadata:
+  title: Bulk Package Update
+  sessions are unique: True
+  required privileges:
+    - admin
+    - developer
+  temporary session: True
+---
+objects:
+  - daREST: DAWeb.using(base_url=get_config('url root',"https://" + get_config('external hostname',"")) + "/api" )
+  - packages: DAList.using(object_type=DAObject, there_are_any=True, complete_attribute="package_name")
+---
+code: |
+  installed_packages = daREST.get('package',{"key": install_packages_api_key })
+---
+code: |
+  install_packages_api_key = get_config('install packages api key')
+---
+mandatory: True
+id: interview order
+code: |
+  packages.gather()
+  if install_packages_task.ready():
+    ending_screen
+  else:
+    waiting_screen
+---
+question: |
+  What packages do you want to update?
+fields:
+  - Packages: packages
+    datatype: checkboxes
+    code: |
+      [[package.get('name'),package.get('name'),True] for package in installed_packages if 'docassemble.' in package.get('name') and package.get('name') not in ['docassemble.demo','docassemble.webapp','docassemble.base']]
+
+---
+code: |
+  install_packages_task = background_action('install_packages_event')
+---
+event: install_packages_event
+code: |
+  for package in packages:
+    data = {"key": install_packages_api_key,
+            "update": package
+            }
+    # This won't persist after backround task completes
+    package.status = daREST.post("package",data=data)
+  background_response()
+---  
+event: waiting_screen
+question: |
+  Wait here
+reload: True
+---
+event: ending_screen
+question: |
+  All done
+buttons:
+  - Restart: restart

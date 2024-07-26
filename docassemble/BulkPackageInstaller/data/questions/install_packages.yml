@@ -1,0 +1,85 @@
+metadata:
+  title: Bulk Package Install
+  sessions are unique: True
+  required privileges:
+    - admin
+    - developer
+  temporary session: True
+---
+objects:
+  - daREST: DAWeb.using(base_url=get_config('url root',"https://" + get_config('external hostname',"")) + "/api" )
+  - packages: DAList.using(object_type=DAObject, there_are_any=True, complete_attribute="github_url")
+---
+code: |
+  install_packages_api_key = get_config('install packages api key')
+---
+mandatory: True
+id: interview order
+code: |
+  packages.gather()
+  if install_packages_task.ready():
+    ending_screen
+  else:
+    waiting_screen
+---
+question: |
+  What packages do you want to install?
+list collect: True
+fields:
+  - Github URL: packages[i].github_url
+  - YAML filename: packages[i].yaml_name
+  - Short name or alias (no spaces): packages[i].alias
+---
+code: |
+  install_packages_task = background_action('install_packages_event')
+---
+event: install_packages_event
+code: |
+  for package in packages:
+    data = {"key": install_packages_api_key,
+            "github_url": package.github_url
+            }
+    # This won't persist after backround task completes
+    package.status = daREST.post("package",data=data)
+  background_response()
+---  
+event: waiting_screen
+question: |
+  Wait here
+reload: True  
+---
+code: |
+  dispatch_temp = ""
+  for package in packages:
+    package_regex = r"https:\/\/github\.com\/.*\/docassemble-([\w]*)"
+    match = re.search(package_regex, package.github_url)
+    if match:
+      dispatch_temp += '  "' + package.alias + '": '  
+      package_name = "docassemble." + match.groups()[0]
+      dispatch_temp += '"' + package_name + ':data/questions/' + package.yaml_name + '"'
+      dispatch_temp += "\n"
+  dispatch_directive = dispatch_temp
+  del dispatch_temp
+  del match
+---
+event: ending_screen
+question: |
+  All done
+subquestion: |
+  Copy the dispatch directive below into the right place in the 
+  configuration file.
+  
+  
+  ${ indent(dispatch_directive) }
+  
+  
+  IOnce you install the dispatch directive, you can use these
+  links to reach your interviews:
+  
+  Alias | Link
+  ------|--------
+  % for package in packages:
+  ${ package.alias } | [${package.alias}](/start/${package.alias})
+  % endfor
+buttons:
+  - Restart: restart
