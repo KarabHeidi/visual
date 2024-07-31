@@ -42,7 +42,7 @@ def find_package_data(where='.', package='', exclude=standard_exclude, exclude_d
                 out.setdefault(package, []).append(prefix+name)
     return out
 
-setup(name='docassemble.BulkPackageInstaller',
+setup(name='docassemble.ALDashboard',
       version='0.0.3',
       description=('Bulk package installer'),
       long_description='# Bulk package Installer\r\n\r\nA tool to help with the tedium of installing many packages and \r\nobtaining short URL links at once.\r\n\r\nTo use, you must create a docassemble API key and add it to your\r\nconfiguration, like this:\r\n\r\n`install packages api key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`',
@@ -55,6 +55,6 @@ setup(name='docassemble.BulkPackageInstaller',
       namespace_packages=['docassemble'],
       install_requires=[],
       zip_safe=False,
-      package_data=find_package_data(where='docassemble/BulkPackageInstaller/', package='docassemble.BulkPackageInstaller'),
+      package_data=find_package_data(where='docassemble/ALDashboard/', package='docassemble.ALDashboard'),
      )
 
