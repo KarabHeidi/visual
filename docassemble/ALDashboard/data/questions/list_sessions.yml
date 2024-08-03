@@ -1,0 +1,33 @@
+---
+question: |
+  What interview do you want to view sessions for?  
+fields:
+  - Filename: filename
+    code: |
+      [{interview.get('filename'): interview.get('title')} for interview in interview_menu()]
+---
+code: |
+  sessions_list_temp = []
+  next_id = None
+  while True:
+      (items, next_id) = interview_list(next_id=next_id, filename=filename, user_id='all')
+      sessions_list_temp.extend(items)
+      if not next_id:
+          break
+  sessions_list = sessions_list_temp
+  del sessions_list_temp
+---
+mandatory: True
+event: load_answer
+question: |
+  Recently generated sessions for ${ filename }
+subquestion: |
+  
+  % for interview in sessions_list:
+  * ${'<a class="xyz" href="' + interview_url(i=filename, session=interview['session']) + '">' +  interview['title'] +  (' (' + interview.get("subtitle",'') + ')' if interview.get('subtitle') else '')  +"</a>" }  Last visited ${format_date(interview['modtime'])}, currently on page **${interview['dict'].get('_internal',{}).get('steps')}**
+      * [View variables](${ url_action('view_session_variables', session_id=interview['session']) })
+  % endfor
+---
+event: view_session_variables
+code: |
+  json_response(get_session_variables(filename, action_argument('session_id'),  simplify=True))
