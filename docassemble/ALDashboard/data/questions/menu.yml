@@ -1,4 +1,13 @@
 ---
+metadata:
+  title: ALDashboard
+  short title: Dashboard
+  description: |
+    A management dashboard
+  temporary session: True
+  required privileges:
+    - admin
+---
 mandatory: True
 event: dashboard
 question: |
