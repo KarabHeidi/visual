@@ -1,16 +1,36 @@
 ---
+code: |
+  user_list_temp = []
+  next_id = None
+  while True:
+    (items, next_id) = get_user_list()
+    user_list_temp.extend(items)
+    if not next_id:
+      break
+  all_users = user_list_temp
+  del user_list_temp
+---
 question: |
   What interview do you want to view sessions for?  
 fields:
   - Filename: filename
     code: |
       [{interview.get('filename'): interview.get('title')} for interview in interview_menu()]
+  - User (leave blank to view all sessions): chosen_user
+    required: False
+    datatype: integer
+    input type: combobox
+    code: |
+      ({item['id']: item['email']} for item in all_users)
 ---
 code: |
   sessions_list_temp = []
   next_id = None
   while True:
-      (items, next_id) = interview_list(next_id=next_id, filename=filename, user_id='all')
+      if chosen_user:
+        (items, next_id) = interview_list(next_id=next_id, filename=filename, user_id=chosen_user)
+      else:
+        (items, next_id) = interview_list(next_id=next_id, filename=filename, user_id='all')      
       sessions_list_temp.extend(items)
       if not next_id:
           break
