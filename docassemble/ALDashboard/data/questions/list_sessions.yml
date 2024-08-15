@@ -40,7 +40,7 @@ subquestion: |
       ${ interviews.get(interview['filename'],{'title': interview['filename']}).get('title') }
     </a>
     (Modified ${ format_date(interview['modtime']) }), on page **${ interview['num_keys'] }**
-      * [View variables](${ url_action('view_session_variables', session_id=interview['key']) })
+      * [View variables](${ interview_url_action('view_session_variables', session_id=interview['key']) })
   % endfor
 ---
 event: view_session_variables

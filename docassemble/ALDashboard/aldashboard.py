@@ -6,7 +6,7 @@ from typing import List, Tuple
 
 db = init_sqlalchemy()
 
-__all__ = ['speedy_get_users','speedy_get_sessions']
+__all__ = ['speedy_get_users','speedy_get_sessions', 'get_users_and_name']
 
 
 def speedy_get_users()->List[Tuple[int, str]]:
@@ -17,9 +17,20 @@ def speedy_get_users()->List[Tuple[int, str]]:
   
   return [tuple(user) for user in the_users]
 
-def speedy_get_sessions(user_id:int=None, filename:str=None):
+def get_users_and_name()->List[Tuple[int, str, str]]:
+  users = UserModel.query.with_entities(UserModel.id, UserModel.email, UserModel.first_name, UserModel.last_name)
+  
+  return users
+
+def speedy_get_sessions(user_id:int=None, filename:str=None)->List[Tuple]:
   """
-  Return a lsit of the most recent 500 sessions, optionally tied to a specific user ID
+  Return a lsit of the most recent 500 sessions, optionally tied to a specific user ID.
+  
+  Each session is a tuple with named columns:
+  filename,
+  user_id,
+  modtime,
+  key
   """
   get_sessions_query = text("""
   SELECT  userdict.filename as filename
