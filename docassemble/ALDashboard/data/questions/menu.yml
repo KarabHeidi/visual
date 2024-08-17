@@ -13,6 +13,9 @@ event: dashboard
 question: |
   ALDashboard
 buttons:
+  - Manage Users: exit
+    url: ${ interview_url(i=user_info().package + ":manage_users.yml") }
+    image: users-cog
   - Install Packages: exit
     url: ${ interview_url(i=user_info().package + ":install_packages.yml") }
     image: cogs

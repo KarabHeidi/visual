@@ -1,0 +1,90 @@
+metadata:
+  title: Manage users
+  sessions are unique: True
+  required privileges:
+    - admin
+  temporary session: True
+---
+modules:
+  - .aldashboard
+---
+mandatory: True
+id: interview order
+code: |
+  chosen_user
+  if user_task == 'reset_password':
+    do_update_password
+  elif user_task == 'elevate_permissions':
+    do_update_privileges
+  ending_screen    
+---
+id: select user
+question: |
+  Manage users
+fields:
+  - User: chosen_user
+    datatype: integer
+    input type: combobox
+    code: |
+      [{user[0]: f"{user['first_name']} {user['last_name']} {user['email']}"} for user in get_users_and_name()]      
+    exclude:
+      - "2"
+    # User ID 2 is the "cron" user and should not be managed here        
+  - What do you want to do?: user_task
+    datatype: radio
+    choices:
+      - Reset password: reset_password
+      # - Download playground files: download_playground
+      - Change user permissions: elevate_permissions
+  - New password: new_user_password
+    datatype: password
+    show if:
+      variable: user_task
+      is: reset_password
+    validate: valid_password      
+  - Verify new password: new_user_password_2
+    datatype: password
+    show if:
+      variable: user_task
+      is: reset_password
+    validate: valid_password      
+  - New permissions: new_permission_level
+    datatype: multiselect
+    code: |
+      manage_privileges('list')
+    exclude: |
+      'cron'
+    show if:
+      variable: user_task
+      is: elevate_permissions
+    help: |
+      The user's permissions will be completely reset to match the new
+      list of permissions. Use "ctrl" to select multiple.
+validation code: |
+  if user_task == 'reset_password' and new_user_password != new_user_password_2:
+    validation_error("The passwords do not match", field="new_user_password_2")
+---
+code: |
+  set_user_info(user_id=chosen_user, password=new_user_password)
+  do_update_password = True
+---
+code: |
+  set_user_info(user_id=chosen_user, privileges=new_permission_level.true_values().elements )
+  do_update_privileges = True
+---
+code: |
+  def valid_password(pword):
+    if not re.match(r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{6,}$", pword):
+      validation_error(word("Password must have at least 6 characters with one lowercase letter, one uppercase letter and one number"))
+    return True      
+---
+event: ending_screen
+question: |
+  Task is done
+subquestion: |
+  % if user_task == 'elevate_permissions':
+  `${ new_permission_level.true_values().elements }`
+  % endif
+buttons:
+  - Restart: restart
+  
