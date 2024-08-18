@@ -28,11 +28,11 @@ code: |
 question: |
   What packages do you want to update?
 fields:
-  - Packages: packages
+  - no label: packages
+    required: False
     datatype: checkboxes
     code: |
-      [[package.get('name'),package.get('name'),True] for package in installed_packages if 'docassemble.' in package.get('name') and package.get('name') not in ['docassemble.demo','docassemble.webapp','docassemble.base']]
-
+      [[package.get('name'),f"{package.get('name','')} ({package.get('version')})",True] for package in installed_packages if 'docassemble.' in package.get('name') and package.get('name') not in ['docassemble.demo','docassemble.webapp','docassemble.base']]
 ---
 code: |
   install_packages_task = background_action('install_packages_event')
