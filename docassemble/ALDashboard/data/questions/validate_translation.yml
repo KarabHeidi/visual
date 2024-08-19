@@ -1,0 +1,59 @@
+---
+question: |
+  Upload a translation file
+fields:
+  - Translation file: translation_file
+    datatype: file
+    accept: |
+      ".xlsx, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+---
+code: |
+  import pandas as pd
+  df = pd.read_excel(translation_file.path())
+---
+code: |
+  import mako.template
+  import mako.runtime
+  mako.runtime.UNDEFINED = DAEmpty()
+  from mako import exceptions
+  errors = []
+  for index, row in df.iterrows():
+    if 'tr_text' not in row:
+      message("Is this definitely a translation file? Missing column 'tr_text'")
+    if '$ {' in row['tr_text']:
+      errors.append((f"Error on row {index +2}, id: {row['question_id']}", "Space between { and $"))
+    try: 
+      mytemplate = mako.template.Template(row['tr_text'])
+      content = mytemplate.render()
+    except:
+      # Row in XLSX file is 1 indexed, and it has a header row
+      errors.append((f"Error on row {index+2}, id: {row['question_id']}",exceptions.text_error_template().render()))
+  del mytemplate
+  load_all_errors = True
+---
+need:
+  - load_all_errors
+mandatory: True
+question: |
+  % if len(errors):
+  ${ len(errors) } potential errors found
+  % else:
+  No errors found
+  % endif 
+subquestion: |
+  % if len(errors):
+  Common problems:
+  
+  * "Unterminated control character": Even if it looks like there is a new line, try deleting and using "alt+enter" to move the "if", "elif", "else", or "endif" statement to a new line.
+  * Unclosed quotes, (), {}, or the like.
+  * Space between a $ and a {.
+
+  % for row in errors:
+  #### ${ row[0] }
+  ```
+  ${ row[1] }
+  ```
+  
+  % endfor
+  % endif
+  
