@@ -14,20 +14,48 @@ code: |
 code: |
   import mako.template
   import mako.runtime
+  import re
+  
   mako.runtime.UNDEFINED = DAEmpty()
   from mako import exceptions
   errors = []
   for index, row in df.iterrows():
     if 'tr_text' not in row:
       message("Is this definitely a translation file? Missing column 'tr_text'")
+    
+    # Row in XLSX file is 1 indexed, and it has a header row
+    row_num = {index + 2}
+    row_text = row['tr_text']
+    question_id = row['question_id']
+    
     if '$ {' in row['tr_text']:
-      errors.append((f"Error on row {index +2}, id: {row['question_id']}", "Space between { and $"))
+      errors.append((f"Error on row {row_num}, id: {question_id}", "Space between { and $"))
+      
+    # If these regexs get too slow, we can move them out of the for loop  
+    
+    # e.g. " # Some Heading" at start of line
+    indented_heading = re.compile(r'^\s+#', re.MULTILINE)
+    if indented_heading.search( row_text ):
+      errors.append(( f'Warning on row { row_num }, id: { question_id }', 'A heading made with "#" may have extra spaces before it' ))
+    
+    # e.g. "%if True:" or "%other" at start of line
+    percent_no_space = re.compile(r'^%\w', re.MULTILINE)
+    if percent_no_space.search( row_text ):
+      errors.append(( f'Warning on row { row_num }, id: { question_id }', 'No space between % and the following letter.' ))
+      
+    num_opening_curly_brackets = row_text.count( '{' )
+    num_closing_curly_brackets = row_text.count( '}' )
+    if num_closing_curly_brackets > num_opening_curly_brackets:
+      errors.append(( f'Warning on row { row_num }, id: { question_id }', 'A term or Mako code may be missing its opening "{"' ))
+    if num_opening_curly_brackets > num_closing_curly_brackets:
+      errors.append(( f'Warning on row { row_num }, id: { question_id }', 'A term or Mako code may be missing its closing "}"' ))
+    
     try: 
       mytemplate = mako.template.Template(row['tr_text'])
       content = mytemplate.render()
     except:
       # Row in XLSX file is 1 indexed, and it has a header row
-      errors.append((f"Error on row {index+2}, id: {row['question_id']}",exceptions.text_error_template().render()))
+      errors.append((f"Error on row {row_num}, id: {row['question_id']}",exceptions.text_error_template().render()))
   del mytemplate
   load_all_errors = True
 ---
