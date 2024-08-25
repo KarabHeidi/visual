@@ -42,13 +42,38 @@ code: |
     percent_no_space = re.compile(r'^%\w', re.MULTILINE)
     if percent_no_space.search( row_text ):
       errors.append(( f'Warning on row { row_num }, id: { question_id }', 'No space between % and the following letter.' ))
-      
+    
+    # e.g. "%   if True:"
+    percent_too_many_spaces = re.compile(r'^%\s\s+', re.MULTILINE)
+    if percent_too_many_spaces.search( row_text ):
+      errors.append(( f'Warning on row { row_num }, id: { question_id }', 'Too many spaces after %.' ))
+    
     num_opening_curly_brackets = row_text.count( '{' )
     num_closing_curly_brackets = row_text.count( '}' )
     if num_closing_curly_brackets > num_opening_curly_brackets:
       errors.append(( f'Warning on row { row_num }, id: { question_id }', 'A term or Mako code may be missing its opening "{"' ))
     if num_opening_curly_brackets > num_closing_curly_brackets:
       errors.append(( f'Warning on row { row_num }, id: { question_id }', 'A term or Mako code may be missing its closing "}"' ))
+    
+    num_opening_parens = row_text.count( '(' )
+    num_closing_parens = row_text.count( ')' )
+    if num_closing_parens > num_opening_parens:
+      errors.append(( f'Warning on row { row_num }, id: { question_id }', 'An opening "(" may be missing' ))
+    if num_opening_parens > num_closing_parens:
+      errors.append(( f'Warning on row { row_num }, id: { question_id }', 'A closing ")" may be missing' ))
+    
+    ## Not sure these kinds of quotes are so crucial
+    #num_opening_quotes = row_text.count( '“' )
+    #num_closing_quotes = row_text.count( '”' )
+    #if num_closing_quotes > num_opening_quotes:
+    #  errors.append(( f'Warning on row { row_num }, id: { question_id }', 'An opening quote (“) may be missing' ))
+    #if num_opening_quotes > num_closing_quotes:
+    #  errors.append(( f'Warning on row { row_num }, id: { question_id }', 'A closing quote (”) may be missing' ))
+    
+    # e.g. 'some quote"'
+    num_plain_quotes = row_text.count( '"' )
+    if num_plain_quotes % 2 > 0:
+      errors.append(( f'Warning on row { row_num }, id: { question_id }', 'A plain quotation mark (") may be missing. A text editor or spreadsheet may have accidentally reformatted it into fancier quotes.' ))
     
     try: 
       mytemplate = mako.template.Template(row['tr_text'])
