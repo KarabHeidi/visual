@@ -19,12 +19,12 @@ code: |
   mako.runtime.UNDEFINED = DAEmpty()
   from mako import exceptions
   errors = []
-  for index, row in df.iterrows():
+  for index, row in df.dropna().iterrows():
     if 'tr_text' not in row:
       message("Is this definitely a translation file? Missing column 'tr_text'")
     
     # Row in XLSX file is 1 indexed, and it has a header row
-    row_num = {index + 2}
+    row_num = index + 2
     row_text = row['tr_text']
     question_id = row['question_id']
     
