@@ -19,7 +19,8 @@ code: |
   mako.runtime.UNDEFINED = DAEmpty()
   from mako import exceptions
   errors = []
-  for index, row in df.dropna().iterrows():
+  empty_rows = []
+  for index, row in df.fillna('').iterrows():
     if 'tr_text' not in row:
       message("Is this definitely a translation file? Missing column 'tr_text'")
     
@@ -27,6 +28,9 @@ code: |
     row_num = index + 2
     row_text = row['tr_text']
     question_id = row['question_id']
+    
+    if row_text == '':
+      empty_rows.append(row_num)
     
     if '$ {' in row['tr_text']:
       errors.append((f"Error on row {row_num}, id: {question_id}", "Space between { and $"))
@@ -108,5 +112,11 @@ subquestion: |
   ```
   
   % endfor
+  % endif
+  
+  % if len(empty_rows):
+  #### ${ len(empty_rows) } untranslated strings found
+  
+  Rows ${ comma_and_list(empty_rows) } have untranslated text.
   % endif
   
