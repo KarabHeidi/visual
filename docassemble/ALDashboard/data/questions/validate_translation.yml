@@ -99,12 +99,6 @@ question: |
   % endif 
 subquestion: |
   % if len(errors):
-  Common problems:
-  
-  * "Unterminated control character": Even if it looks like there is a new line, try deleting and using "alt+enter" to move the "if", "elif", "else", or "endif" statement to a new line.
-  * Unclosed quotes, (), {}, or the like.
-  * Space between a $ and a {.
-
   % for row in errors:
   #### ${ row[0] }
   ```
