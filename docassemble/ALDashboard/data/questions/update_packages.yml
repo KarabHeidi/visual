@@ -1,3 +1,7 @@
+---
+include:
+  - nav.yml
+---
 metadata:
   title: Bulk Package Update
   sessions are unique: True

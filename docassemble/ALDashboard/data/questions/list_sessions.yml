@@ -1,4 +1,7 @@
 ---
+include:
+  - nav.yml
+---
 modules:
   - .aldashboard
 ---

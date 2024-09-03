@@ -1,3 +1,7 @@
+---
+include:
+  - nav.yml
+---
 metadata:
   title: Manage users
   sessions are unique: True

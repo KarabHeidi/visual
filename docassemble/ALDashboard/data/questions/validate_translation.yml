@@ -1,4 +1,7 @@
 ---
+include:
+  - nav.yml
+---
 question: |
   Upload a translation file
 fields:
