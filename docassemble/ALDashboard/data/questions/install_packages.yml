@@ -16,11 +16,28 @@ code: |
 mandatory: True
 id: interview order
 code: |
+  if not install_packages_api_key:
+    exit_no_api_key
   packages.gather()
   if install_packages_task.ready():
     ending_screen
   else:
     waiting_screen
+---
+event: exit_no_api_key
+question: |
+  Please add an API key!
+subquestion: |
+  This interview requires an API key to work.
+  
+  You can create an API key by going to your profile. Please
+  create an API key with either IP restrictions or no restrictions.
+  
+  Then add it to the [configuration file](${ url_of('config') }) like this:
+  
+  ```
+  install packages api key: x7123aG...
+  ```
 ---
 question: |
   What packages do you want to install?
