@@ -5,11 +5,20 @@ from sqlalchemy.sql import text
 from typing import List, Tuple
 import docassemble.webapp.worker
 from docassemble.webapp.server import user_can_edit_package, get_master_branch, install_git_package, redirect, should_run_create, flash, url_for
+from docassemble.base.config import daconfig
+import yaml
+import ruamel.yaml
 import re
 
 db = init_sqlalchemy()
 
-__all__ = ['install_from_github_url','reset','speedy_get_users','speedy_get_sessions', 'get_users_and_name']
+__all__ = ['install_from_github_url',
+           'reset',
+           'speedy_get_users',
+           'speedy_get_sessions', 
+           'get_users_and_name',
+           'da_get_config'
+          ]
 
 def install_from_github_url(url:str, branch=""):
   giturl = url.strip().rstrip('/')
@@ -32,6 +41,15 @@ def install_from_github_url(url:str, branch=""):
 def reset(packagename=""):
   result = docassemble.webapp.worker.update_packages.apply_async(link=docassemble.webapp.worker.reset_server.s(run_create=should_run_create(packagename)))
   return redirect(url_for('update_package_wait'))
+
+def da_get_config():
+      #try:
+      with open(daconfig['config file'], 'r', encoding='utf-8') as fp:
+          content = fp.read()
+      data = yaml.load(content, Loader=yaml.FullLoader)
+      return data
+      #except:
+      #return None
 
 def speedy_get_users()->List[Tuple[int, str]]:
   """
