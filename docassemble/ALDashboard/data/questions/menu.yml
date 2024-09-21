@@ -12,23 +12,27 @@ metadata:
 mandatory: True
 event: dashboard
 question: |
-  ALDashboard
+  ALDashboard 
 buttons:
-  - Manage Users: exit
+  - Manage Users: exit  
     url: ${ interview_url(i=user_info().package + ":manage_users.yml") }
     image: users-cog
   - Install Packages: exit
     url: ${ interview_url(i=user_info().package + ":install_packages.yml") }
-    image: cogs
+    image: cogs    
   - Update Packages: exit
     url: ${ interview_url(i=user_info().package + ":update_packages.yml") }
     image: sync
   - View Answer Files: exit
     url: ${ interview_url(i=user_info().package + ":list_sessions.yml") }
     image: file-alt
-  - Validate translation files: exit
+  - Validate Translation Files: exit
     url: ${ interview_url(i=user_info().package + ":validate_translation.yml") }
     image: language
   - Stats: exit
     url: ${ interview_url(i="docassemble.InterviewStats:data/questions/stats.yml") }
     image: chart-bar
+  - Package Scanner: exit
+    url: ${ interview_url(i=user_info().package + ":package_scanner.yml") }
+    image: search
+    
