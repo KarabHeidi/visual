@@ -40,7 +40,7 @@ fields:
   - Package type: pkg_type
     datatype: radio
     choices:      
-      - Key dockassemble packages: key_pkgs        
+      - Key docassemble packages: key_pkgs        
       - Non-key docassemble packages: non_key_pkgs      
       - Both: both       
     js show if:
