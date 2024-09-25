@@ -111,11 +111,10 @@ def fetch_github_repos (github_user, sub_queries) -> dict:
       time.sleep(DELAY_BETWEEN_QUERYS)
   return sort_dict(repositories)
 
-#-----------------------------------------------------
-# Grab github repo version number in setup.py and add it to the input repo_list
-# Separate the pile into key repos/non-key repos & sort each, then store them in a new nested dict.
-#-----------------------------------------------------
 def fetch_github_repo_version(repo_list, key_pkgs, github_user) -> dict:
+    """Grab github repo version number in setup.py and add it to the input repo_list
+    Separate the pile into key repos/non-key repos & sort each, then store them in a new nested dict.
+    """
   import requests
 
   github_repos = {} # Parent dict
