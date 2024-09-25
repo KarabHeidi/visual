@@ -63,7 +63,7 @@ def sort_dict(raw_data: dict):
 
 URL = "https://api.github.com/search/repositories?q=" #The basic URL to use the GitHub API
 PARAMETERS = "&per_page=100" #Additional parameters for the query (by default 100 items per page)
-DELAY_BETWEEN_QUERYS = 10 #The time to wait between different queries to GitHub 
+DELAY_BETWEEN_QUERYS = 3 #The time to wait between different queries to GitHub 
 
 def getUrl (url) :
   ''' Given a URL it returns its body '''
@@ -145,8 +145,9 @@ def fetch_github_repo_version(repo_list, key_pkgs, github_user) -> dict:
     # Separate key pkgs from non-key pkgs and save them into new dicts
     if k in github_key_pkg_names:
       key_repos[k] = v #copy the record into key_repos
-    else:
-      nonkey_repos[k] = v #copy the record into nonkey_repos
+    else:      
+      if 'version' in repo_list.keys(): # Only care about repos with version#/setup.py
+        nonkey_repos[k] = v #copy the record into nonkey_repos
   
   # Store the sorted new repos into the parent dict
   github_repos['key_repos'] = sort_dict(key_repos)  
