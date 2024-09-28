@@ -134,7 +134,7 @@ subquestion: |
       % endfor 
   
   _**Total # of github packages in the period: ${len(github_repos_dict['non_key_repos'])}**_<br>
-  Note: If a repo doesn't have the version data, it won't be listed on the screen but will be included in the PDF report.
+  Note: We exclude repos that do not have the version data.
   </div>
     % endif # End of non-key packages 
   

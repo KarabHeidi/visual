@@ -130,7 +130,7 @@ def fetch_github_repo_version(repo_list, key_pkgs, github_user) -> dict:
 
     # Fetch file content      
     file_content = requests.get(setup_py_URL)
-
+    has_version_num = False
     # Not every package has a setup.py file
     if file_content.text:
       # Find the line containing "version=" and copy the version number
@@ -140,14 +140,15 @@ def fetch_github_repo_version(repo_list, key_pkgs, github_user) -> dict:
           str_start = decoded_line.find('version=') 
           str_end = decoded_line.find('description') 
           version_num = decoded_line[str_start:str_end][9:].replace('\',\n', '')  
-          v['version'] = version_num # Add version number to the original repo_list.          
+          v['version'] = version_num # Add version number to the original repo_list.
+          has_version_num = True
           break   
   
     # Separate key pkgs from non-key pkgs and save them into new dicts
     if k in github_key_pkg_names:
       key_repos[k] = v #copy the record into key_repos
     else:      
-      if 'version' in repo_list.keys(): # Only care about repos with version#/setup.py
+      if has_version_num: # Only care about repos with version#/setup.py
         nonkey_repos[k] = v #copy the record into nonkey_repos
   
   # Store the sorted new repos into the parent dict
