@@ -1,0 +1,225 @@
+metadata:
+  title: Package scanner
+---
+modules:
+  - .package_scanner
+---
+features:
+  css: 
+    - al_dashboard.css
+    - docassemble.ALWeaver:styles.css
+  question back button: True
+---
+id: intro
+question: |  
+  Package Scanner  
+subquestion: |
+  #### You can use this tool to:
+  1. Compare the **installed** package version with the latest **Github** version, so as to ensure that your server is always up-to-date.  
+      - The packages are separated into AssemblyLine project **key packages** and docassemble **non-key packages**.
+      - Note: only the latest Github repo version is searchable.
+  1. Survey docassemble packages on Github belonging to a given github user.
+      - The github username can be organizational or personal.       
+      - You can search by **created** or **latest commit** dates (but not old commit dates).        
+      - To save search time, version # is NOT included in the **survey** results.
+  1. See results on the screen or download a full report.       
+field: intro
+---
+id: search parameters
+question: |  
+  Specify your search preferences
+fields:   
+  - Report date: report_date
+    datatype: date
+    default: ${ today() }
+  - Search type: search_type
+    datatype: radio
+    choices:
+      - Compare version: compare_version
+      - Survey Github packages: survey_github    
+  - Package type: pkg_type
+    datatype: radio
+    choices:      
+      - Key docassemble packages: key_pkgs        
+      - Non-key docassemble packages: non_key_pkgs      
+      - Both: both       
+    js show if:
+      val('search_type') == 'compare_version'
+  - Github repo created or committed: github_select_type 
+    datatype: radio
+    choices:
+      - Created: created
+      - Last committed: pushed          
+    js show if:
+      val('search_type') == 'survey_github'  
+---
+id: github parameters with end date
+question: |  
+  Enter Github parameters
+fields:
+  - Github user name (private or organization): github_user      
+    default: 'SuffolkLITLab'        
+  - Github repo begin date: begin_date  
+    datatype: date
+    default: ${ today().replace(day=1)}        
+  - Github repo end date: end_date  
+    datatype: date
+    default: ${ today()}    
+---
+id: github parameters without end date
+question: |  
+  Enter Github parameters
+fields:
+  - Github user name (private or organization): github_user      
+    default: 'SuffolkLITLab'        
+  - Github repo begin date: begin_date  
+    datatype: date
+    default: ${ today().replace(day=1)}        
+  - note: |
+      Note: For **Compare version** search type, the **Github repo end date** is default to today() because only the latest version number is searchable.
+---
+id: package info display
+question: |  
+subquestion: |    
+  <div class="article_title">Report Date: ${ report_date }<br>
+  Server name: ${ server_name }<br>  
+  Github user name: ${ github_user }<br>
+  (${display_github_str})</div>
+  
+  % if search_type == 'compare_version':      
+    % if pkg_type != 'non_key_pkgs':
+  <div class="panel_sky" markdown="1">
+  
+  ####Version comparison: Key packages 
+  Repo Name | Server Version | Github Version
+  -------------------------------|------------|------------
+      % for key, val in key_table_dict.items():
+  ${key} | ${val['server']} | ${val['github']}
+      % endfor
+ 
+  _**Total # of installed packages: ${len(server_pkg_dict['key_pkgs'])}**_  
+      
+  ####Key packages in github:<br>  
+      % for key, val in github_repos_dict['key_repos'].items():  
+      % for k, v in val.items():          
+        % if k == 'version':
+    ${ key }:  v${ v }
+        % endif                 
+      % endfor
+      % endfor 
+
+  _**Total # of github packages in this period: ${len(github_repos_dict['key_repos'])}**_
+  </div>
+    % endif # End of key packages 
+  
+    % if pkg_type != 'key_pkgs':  
+  <div class="panel_green" markdown="1">  
+  
+  ####Version comparison: Non-key docassemble packages 
+  Repo Name | Server Version | Github Version
+  -------------------------------|------------|------------
+      % for key, val in non_key_table_dict.items():
+  ${key} | ${val['server']} | ${val['github']}
+      % endfor
+      
+  _**Total # of installed packages: ${len(server_pkg_dict['non_key_pkgs'])}**_
+    
+  ####Non-key docassemble packages in github:<br>
+      % for key, val in github_repos_dict['non_key_repos'].items():  
+      % for k, v in val.items():            
+        % if k == 'version':
+    ${ key }:  v${ v }
+        % endif         
+      % endfor
+      % endfor 
+  
+  _**Total # of github packages in the period: ${len(github_repos_dict['non_key_repos'])}**_<br>
+  Note: We exclude repos that do not have the version data.
+  </div>
+    % endif # End of non-key packages 
+  
+  % else: # Search type = Survey 
+  <div class="panel_sky" markdown="1">
+  #### Github package survey:<br>
+    % for key, val in github_repos.items():            
+      % for k, v in val.items():
+        % if k == 'created_date': 
+    ${ key }: Created on ${ format_date(v, format='MM/dd/yyyy') }<br>
+        % endif  
+      % endfor
+    % endfor                 
+  
+  _**Total # of github packages in the period: ${len(github_repos)}**_
+  </div>
+  % endif # End of search_type   
+  
+field: show_results
+continue button label: See full report
+---
+id: download report
+event: download_report
+question:
+  Download the full report.
+
+buttons:
+  - Exit: exit
+  - Restart: restart
+  
+attachments:
+  - name: Package Scanner Report    
+    docx template file: pkg_scanner_report.docx
+    valid formats:
+      - pdf
+---
+# logic
+mandatory: True
+code: |
+  intro
+  search_type  
+  if github_select_type == 'created':    
+    end_date # Github input with the end_date question
+  else:
+    github_user # Github input w/t the end_date question
+  if search_type == 'compare_version':    
+    github_repos_dict
+  show_results  
+  download_report
+---
+# Set defaults related to search type
+code: |
+  if search_type == 'compare_version':
+    github_select_type = 'pushed'    
+  else:
+    pkg_type == 'both'
+---
+# Set defaults related to 'pushed' type
+code: |  
+  if github_select_type == 'pushed':
+    end_date = today()
+---
+code: |
+  key_pkg_names = ['docassemble.ALWeaver', 'docassemble.AssemblyLine', 'docassemble.ALMassechusetts', 'docassemble.massaccess', 'docassemble.ALToolbox', 'docassemble.ALDashboard',]
+  server_name = get_server_name(interview_url())
+---
+# Fetch github repos
+code: |
+  # Limit query output by subquery (dates)
+  github_begin_date = format_date(begin_date, format="yyyy-MM-dd")
+  github_end_date = format_date(end_date, format="yyyy-MM-dd")  
+  sub_qry_str = ['+' + github_select_type + '%3A' + github_begin_date + '..' + github_end_date]
+  display_github_str = github_select_type + ' between ' + github_begin_date + ' and ' + github_end_date 
+  
+  # Fetch repo info (nested dicts)   
+  github_repos = fetch_github_repos ("user:" + github_user, sub_qry_str)  
+---
+# For version comparison
+code: |
+  # Add repo verstion to github_repos and create a new nested dict to be used in version comparison.  
+  github_repos_dict = fetch_github_repo_version(github_repos, key_pkg_names, github_user) 
+
+  # Fetch the installed packages, save results in a nested dict          
+  server_pkg_dict = installed_pkg_list(key_pkg_names)
+
+  # Fetch version comparison tables for screen display
+  key_table_dict = compare_repo_version(server_pkg_dict['key_pkgs'], github_repos_dict['key_repos'])
+  non_key_table_dict = compare_repo_version(server_pkg_dict['non_key_pkgs'], github_repos_dict['non_key_repos'])
