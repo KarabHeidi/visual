@@ -2,6 +2,159 @@
 include:
   - nav.yml
 ---
+imports:
+  - requests
+---
+mandatory: True
+code: |
+  welcome
+  basic_server_config
+  recommended_api_config
+  menu_shortcut_config
+  save_config
+  selected_mandatory_packages  
+  al_install_done
+  end_screen
+---
+id: welcome
+continue button field: welcome
+question: |
+  Document Assembly Line Installation  
+---
+code: |
+  the_config = da_get_config()
+  
+  # Create some empty structures in config for new settings
+  if not the_config.get('efile proxy'):
+    the_config['efile proxy'] = {}
+      
+---
+id: configuration questions
+continue button field: basic_server_config
+question: |
+  Basic Server Settings
+subquestion: |
+  Look over the settings below. Make sure that they match your
+  organization's branding. These are **not** required for the 
+  Assembly Line, but may leak out in log files and emails. You should
+  get these right if you can.
+fields:
+  - Server title: the_config['default title']
+    default: ${ the_config.get('default title') }
+  - Server short title: the_config['default short title']
+    default: ${ the_config.get('default short title') }
+  - App name: the_config['appname']
+    default: ${ the_config.get('appname') }
+  - note: |
+      ---
+      Some features require background processing, which means you need
+      the "Check-in" interval set. We recommend the default interval of
+      6 seconds (6000 microseconds).
+    #show if:
+    #  code: |
+    #    the_config.get('checkin interval') != 6000
+  - Check-in interval: the_config['checkin interval']
+    default: 6000
+    #show if:
+    #  code: |
+    #    the_config.get('checkin interval') != 6000
+  - note: |
+      ---
+      The Assembly Line makes extensive use of Font Awesome. Some icons
+      may not work if you do not use font awesome as your icon set.
+    #show if:
+    #  code: |
+    #    the_config.get('default icons') != 'font awesome'
+  - Default icon set: the_config['default icons']
+    default: font awesome
+    #show if:
+    #  code: |
+    #    the_config.get('default icons') != 'font awesome'
+comment: |
+  default title: Suffolk LIT Lab test
+  default short title: LIT Lab test
+  appname: Suffolk Lit Lab test
+  checkin interval: 6000
+  default icons: font awesome
+---
+id: api configuration
+continue button field: recommended_api_config
+question: |
+  Recommended API Configuration
+fields:
+  - note: |
+      ---
+      We recommend setting up the following "free" / generous free
+      tier API keys:
+      
+      * Server-run API queries: [Google API for geocoding](https://developers.google.com/maps/documentation/geocoding/overview)
+        (Use an IP address restriction--this server's IP address appears to be ${ bold(requests.get('https://checkip.amazonaws.com').text.strip() or "UNKNOWN") })
+      * Frontend browser API queries: [Google JavaScript API for maps](https://developers.google.com/maps/documentation/javascript/overview) / [Google places for autocompletion](https://developers.google.com/maps/documentation/places/web-service/overview)
+        (Use a referer restriction )
+      * VoiceRSS
+      
+      Please confirm that you have enabled "geocoding", "maps javascript" and "places" on
+      your Google Cloud Console account. Billing must also be turned on,
+      although you can set a quota well below the threshold that would trigger
+      any costs.
+      
+      You should also set up the following:
+      
+      * Mail (SendGrid or Mailgun have free tiers, but limited)
+      * Twilio for SMS
+      
+  - note: |
+      ---
+      If you choose to use the [e-file proxy server](https://github.com/SuffolkLITLab/EfileProxyServer),
+      you should also generate or [get an API token](https://github.com/SuffolkLITLab/EfileProxyServer/#making-api-tokens)
+      to authenticate this server's connection.
+      
+      Using the e-file connection is rare. Feel free to skip this step. 
+  - Skip efile configuration: skip_efile
+    datatype: yesno
+  - E-file server URL: the_config['efile proxy']['url']
+    default: ${ the_config['efile proxy'].get('url') or "https://efile.suffolklitlab.org:9000" }
+    hide if: skip_efile
+  - E-file proxy api key: the_config['efile proxy']['api key']
+    default: ${ the_config['efile proxy'].get('api key') }
+    hide if: skip_efile
+  - E-file proxy JeffNet api key (rare): the_config['efile proxy']['jeffnet api token']
+    default: ${ the_config['efile proxy'].get('jeffnet api token') }
+    hide if: skip_efile
+      
+  
+comment: |
+  
+  google:
+    api key: ***REMOVED***
+    google maps api key: ***REMOVED***
+    analytics id: UA-163204491-4
+  voicerss:
+    enable: true
+    key: ***REMOVED***
+  words:
+  - docassemble.base:data/sources/us-words.yml
+  - docassemble.LanguagePack:data/sources/es-words.yml
+
+  github issues:
+    username: suffolklitlab-issues
+    token: ***REMOVED***
+    default repository owner: suffolklitlab
+    allowed repository owners:
+    - suffolklitlab
+    - suffolklitlab-issues
+    - masslegalhelp
+  github readonly:
+    username: suffolklitlab-issues
+    password: ***REMOVED***
+    type: basic
+  administrative interviews:
+  - docassemble.ALWeaver:data/questions/assembly_line.yml
+  - docassemble.ALDashboard:data/questions/menu.yml
+  playground examples:
+  - docassemble.AssemblyLinePlaygroundExamples:data/questions/examples.yml
+  - docassemble.base:data/questions/example-list.yml
+---
 variable name: mandatory_packages
 data:
   "https://github.com/SuffolkLITLab/docassemble-ALToolbox":
@@ -42,19 +195,8 @@ data:
     help: |
       E-filing client for Tyler EFM
 ---
-comment: |
-  manage_api
-  
-  from docassemble.webapp.daredis import r, r_user
----
 modules:
   - .aldashboard
----
-mandatory: True
-code: |
-  selected_mandatory_packages
-  al_install_done
-  end_screen
 ---
 code: |
   for pkg_url in selected_mandatory_packages.true_values() + selected_optional_packages.true_values():

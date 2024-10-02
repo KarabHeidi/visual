@@ -2,12 +2,14 @@ from docassemble.webapp.users.models import UserModel
 from docassemble.webapp.db_object import init_sqlalchemy
 # db is a SQLAlchemy Engine
 from sqlalchemy.sql import text
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 import docassemble.webapp.worker
-from docassemble.webapp.server import user_can_edit_package, get_master_branch, install_git_package, redirect, should_run_create, flash, url_for
+from docassemble.webapp.server import user_can_edit_package, get_master_branch, install_git_package, redirect, should_run_create, flash, url_for, restart_all
 from docassemble.base.config import daconfig
-import yaml
-import ruamel.yaml
+from docassemble.webapp.backend import cloud
+from docassemble.base.util import log
+from ruamel.yaml import YAML
+from ruamel.yaml.compat import StringIO
 import re
 
 db = init_sqlalchemy()
@@ -17,7 +19,8 @@ __all__ = ['install_from_github_url',
            'speedy_get_users',
            'speedy_get_sessions', 
            'get_users_and_name',
-           'da_get_config'
+           'da_get_config',
+           'da_write_config'
           ]
 
 def install_from_github_url(url:str, branch=""):
@@ -43,13 +46,35 @@ def reset(packagename=""):
   return redirect(url_for('update_package_wait'))
 
 def da_get_config():
-      #try:
-      with open(daconfig['config file'], 'r', encoding='utf-8') as fp:
-          content = fp.read()
-      data = yaml.load(content, Loader=yaml.FullLoader)
-      return data
-      #except:
-      #return None
+  yaml = YAML()
+  yaml.allow_duplicate_keys = True  
+  #try:
+  with open(daconfig['config file'], 'r', encoding='utf-8') as fp:
+    content = fp.read()
+  data = yaml.load(content)
+  return data
+  #except:
+  #  return None
+      
+def da_write_config(data:Dict):
+  yaml = YAML()
+  yaml.allow_duplicate_keys = True  
+  try:
+    # ruamel.yaml has a big rant about why we shouldn't save the YAML output to a string,
+    # but it's done upstream here so we will use the provided workaround 
+    # see https://yaml.readthedocs.io/en/latest/example.html?highlight=StringIO#output-of-dump-as-a-string
+    stream = StringIO()
+    yaml.dump(data, stream)
+    yaml_data = stream.getvalue()
+  except:
+    log("Invalid configuration provided to da_write_config, skipping.")
+    return None
+  if cloud is not None:
+      key = cloud.get_key('config.yml')
+      key.set_contents_from_string(yaml_data)
+  with open(daconfig['config file'], 'w', encoding='utf-8') as fp:
+      fp.write(yaml_data)
+  restart_all()  
 
 def speedy_get_users()->List[Tuple[int, str]]:
   """
