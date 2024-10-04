@@ -16,6 +16,10 @@ code: |
   al_install_done
   end_screen
 ---
+code: |
+  results = da_write_config(the_config)
+  save_config = True
+---
 id: welcome
 continue button field: welcome
 question: |
@@ -27,7 +31,10 @@ code: |
   # Create some empty structures in config for new settings
   if not the_config.get('efile proxy'):
     the_config['efile proxy'] = {}
-      
+  if not the_config.get('google'):
+    the_config['google'] = {}
+  if not the_config.get('voicerss'):
+    the_config['voicerss'] = {}  
 ---
 id: configuration questions
 continue button field: basic_server_config
@@ -81,6 +88,16 @@ id: api configuration
 continue button field: recommended_api_config
 question: |
   Recommended API Configuration
+subquestion: |
+  Below is a list of API configurations that we recommend that you make.
+  
+  If you do not already have these APIs enabled, you may want to take a minute
+  to sign up for each API. You can can use this page to make it a little
+  easier to write the updated values in your configuration file.
+  
+  If you do not have the API key now, that's OK. We will add a placeholder in 
+  your configuration file that may still make it easier to edit and update
+  later.
 fields:
   - note: |
       ---
@@ -88,10 +105,10 @@ fields:
       tier API keys:
       
       * Server-run API queries: [Google API for geocoding](https://developers.google.com/maps/documentation/geocoding/overview)
-        (Use an IP address restriction--this server's IP address appears to be ${ bold(requests.get('https://checkip.amazonaws.com').text.strip() or "UNKNOWN") })
+        (Use an IP address restriction--this server's IP address appears to be ${ bold(requests.get('https://checkip.amazonaws.com').text.strip() or "UNKNOWN") }) (credit card required)
       * Frontend browser API queries: [Google JavaScript API for maps](https://developers.google.com/maps/documentation/javascript/overview) / [Google places for autocompletion](https://developers.google.com/maps/documentation/places/web-service/overview)
-        (Use a referer restriction )
-      * VoiceRSS
+        (Use a referer restriction ) (credit card required)
+      * [VoiceRSS](http://www.voicerss.org/) screen reader (no credit card required)
       
       Please confirm that you have enabled "geocoding", "maps javascript" and "places" on
       your Google Cloud Console account. Billing must also be turned on,
@@ -102,7 +119,24 @@ fields:
       
       * Mail (SendGrid or Mailgun have free tiers, but limited)
       * Twilio for SMS
+  - Google API key (for geocoding, IP restrictions): the_config['google']['api key']
+    default: ${ the_config['google'].get('api key') }
+  - Google Maps API key (for maps and address auto completion): the_config['google']['google maps api key']
+    default: ${ the_config['google'].get('api key') }
+  - Enable VoiceRSS: the_config['voicerss']['enable']
+    datatype: yesno
+    default: True
+  - VoiceRSS API Key: the_config['voicerss']['key']
+    default: ${ the_config['voicerss'].get('key') }    
+  - note: |
+      % if not the_config.get('mail'):
+      ** You do not appear to have a valid mail configuration.**
+      Follow the Docassemble instructions to [setup a mail 
+      server](https://docassemble.org/docs/config.html#mail) **after**
+      you finish this installation process.
       
+      We recommend using SendGrid, not an SMTP server.
+      % endif
   - note: |
       ---
       If you choose to use the [e-file proxy server](https://github.com/SuffolkLITLab/EfileProxyServer),
@@ -124,21 +158,13 @@ fields:
       
   
 comment: |
-  
-  google:
-    api key: ***REMOVED***
-    google maps api key: ***REMOVED***
-    analytics id: UA-163204491-4
-  voicerss:
-    enable: true
-    key: ***REMOVED***
   words:
   - docassemble.base:data/sources/us-words.yml
   - docassemble.LanguagePack:data/sources/es-words.yml
 
   github issues:
     username: suffolklitlab-issues
-    token: ***REMOVED***
+    token: 
     default repository owner: suffolklitlab
     allowed repository owners:
     - suffolklitlab
@@ -146,7 +172,7 @@ comment: |
     - masslegalhelp
   github readonly:
     username: suffolklitlab-issues
-    password: ***REMOVED***
+    password: 
     type: basic
   administrative interviews:
   - docassemble.ALWeaver:data/questions/assembly_line.yml
