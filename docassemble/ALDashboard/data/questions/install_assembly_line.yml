@@ -9,13 +9,12 @@ mandatory: True
 code: |
   backup_file
   welcome
-  selected_mandatory_packages  
   basic_server_config
   recommended_api_config
   feedback_form_config
   menu_shortcut_config
   save_config
-    
+  selected_mandatory_packages    
   al_install_done
   end_screen
 ---
@@ -40,8 +39,10 @@ code: |
     # Add the default playground examples explicitly
     if not 'docassemble.base:data/questions/example-list.yml' in the_config['playground examples']:
       the_config['playground examples'].append('docassemble.base:data/questions/example-list.yml')
-  # if add_word_translations and not 
-  # TODO: we need to relocate the words.yml file before adding a shortcut
+  if add_word_translations and not "docassemble.AssemblyLine:data/sources/es-words.yml" in the_config.get('words'):
+    if not isinstance(the_config.get('words'), list):
+      the_config['words'] = []
+    the_config['words'].append('docassemble.AssemblyLine:data/sources/es-words.yml')
   
   results = da_write_config(the_config)
   save_config = True
@@ -223,7 +224,7 @@ fields:
   - Allowed repository owners (one per line): allowed_github_repo_owners
     datatype: area
     default: |
-      ${ [f"{name}\n" for name in the_config['github issues'].get('allowed repository owners',[]) ]}
+      ${ "\n".join(the_config['github issues'].get('allowed repository owners',[])) }
   - note: |
       #### Read-only GitHub account for getting update time
   - Username: the_config['github readonly']['username']
@@ -232,7 +233,7 @@ fields:
 id: shortcuts
 continue button field: menu_shortcut_config
 question: |
-  Menu shortcuts
+  Menu Shortcuts
 fields:
   - Add shortcut to Dashboard: add_dashboard_shortcut
     datatype: yesno
@@ -243,17 +244,9 @@ fields:
   - Add Assembly-Line model questions to Playground: add_playground_examples
     datatype: yesno
     default: True  
-comment: |
-  TODO once https://github.com/SuffolkLITLab/docassemble-LanguagePack/issues/4
-  is resolved, add in this
-  
   - Add words.yml translations: add_word_translations
     datatype: yesno
     default: True  
-  
-  words:
-  - docassemble.base:data/sources/us-words.yml
-  - docassemble.LanguagePack:data/sources/es-words.yml
 ---
 variable name: mandatory_packages
 data:
