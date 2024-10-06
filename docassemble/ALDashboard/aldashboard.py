@@ -7,7 +7,7 @@ import docassemble.webapp.worker
 from docassemble.webapp.server import user_can_edit_package, get_master_branch, install_git_package, redirect, should_run_create, flash, url_for, restart_all
 from docassemble.base.config import daconfig
 from docassemble.webapp.backend import cloud
-from docassemble.base.util import log
+from docassemble.base.util import log, DAFile
 from ruamel.yaml import YAML
 from ruamel.yaml.compat import StringIO
 import re
@@ -20,6 +20,7 @@ __all__ = ['install_from_github_url',
            'speedy_get_sessions', 
            'get_users_and_name',
            'da_get_config',
+           'da_get_config_as_file',
            'da_write_config'
           ]
 
@@ -44,6 +45,18 @@ def install_from_github_url(url:str, branch=""):
 def reset(packagename=""):
   result = docassemble.webapp.worker.update_packages.apply_async(link=docassemble.webapp.worker.reset_server.s(run_create=should_run_create(packagename)))
   return redirect(url_for('update_package_wait'))
+
+def da_get_config_as_file():
+  yaml = YAML()
+  yaml.allow_duplicate_keys = True  
+  #try:
+  with open(daconfig['config file'], 'r', encoding='utf-8') as fp:
+    content = fp.read()
+  
+  the_file = DAFile()
+  the_file.initialize(filename="config.yml")
+  the_file.write(content)
+  return the_file
 
 def da_get_config():
   yaml = YAML()
