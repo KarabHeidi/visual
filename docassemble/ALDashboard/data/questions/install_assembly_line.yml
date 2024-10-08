@@ -104,32 +104,26 @@ fields:
       Some features require background processing, which means you need
       the "Check-in" interval set. We recommend the default interval of
       6 seconds (6000 microseconds).
-    #show if:
-    #  code: |
-    #    the_config.get('checkin interval') != 6000
+    show if:
+      code: |
+        the_config.get('checkin interval') != 6000
   - Check-in interval: the_config['checkin interval']
     default: 6000
-    #show if:
-    #  code: |
-    #    the_config.get('checkin interval') != 6000
+    show if:
+      code: |
+        the_config.get('checkin interval') != 6000
   - note: |
       ---
       The Assembly Line makes extensive use of Font Awesome. Some icons
       may not work if you do not use font awesome as your icon set.
-    #show if:
-    #  code: |
-    #    the_config.get('default icons') != 'font awesome'
+    show if:
+      code: |
+        the_config.get('default icons') != 'font awesome'
   - Default icon set: the_config['default icons']
     default: font awesome
-    #show if:
-    #  code: |
-    #    the_config.get('default icons') != 'font awesome'
-comment: |
-  default title: Suffolk LIT Lab test
-  default short title: LIT Lab test
-  appname: Suffolk Lit Lab test
-  checkin interval: 6000
-  default icons: font awesome
+    show if:
+      code: |
+        the_config.get('default icons') != 'font awesome'
 ---
 id: api configuration
 continue button field: recommended_api_config
@@ -202,7 +196,7 @@ fields:
   - E-file proxy JeffNet api key (rare): the_config['efile proxy']['jeffnet api token']
     default: ${ the_config['efile proxy'].get('jeffnet api token') }
     hide if: skip_efile
-      
+    required: False
 ---
 id: feedback form config
 continue button field: feedback_form_config
