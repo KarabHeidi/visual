@@ -64,7 +64,7 @@ subquestion: |
   own Docassemble interviews using the Assembly Line framework. For example,
   the interviews hosted at [CourtFormsOnline.org](https://courtformsonline.org).
   
-  You may want to pause and make a backup of your
+  You may want to pause and download a copy of your
   [:file-download: configuration file](${ backup_file.url_for(attachment=True) }) before you continue.
 ---
 code: |
