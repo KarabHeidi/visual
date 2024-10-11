@@ -98,7 +98,7 @@ fields:
   - Server short title: the_config['default short title']
     default: ${ the_config.get('default short title') }
   - App name: the_config['appname']
-    default: ${ the_config.get('appname') }
+    default: ${ the_config.get('appname', '') }
   - note: |
       ---
       Some features require background processing, which means you need
