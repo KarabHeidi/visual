@@ -220,7 +220,7 @@ fields:
     default: |
       ${ "\n".join(the_config['github issues'].get('allowed repository owners',[])) }
   - note: |
-      #### Read-only GitHub account for getting update time
+      #### GitHub account for reading last updated time
   - Username: the_config['github readonly']['username']
   - Private token: the_config['github readonly']['username']
 ---
