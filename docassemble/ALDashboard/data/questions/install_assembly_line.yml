@@ -2,17 +2,264 @@
 include:
   - nav.yml
 ---
+imports:
+  - requests
+---
+mandatory: True
+code: |
+  backup_file
+  welcome
+  basic_server_config
+  recommended_api_config
+  feedback_form_config
+  menu_shortcut_config
+  save_config
+  selected_mandatory_packages    
+  al_install_done
+  end_screen
+---
+code: |
+  backup_file = da_get_config_as_file()
+---
+code: |
+  the_config['github issues']['allowed repository owners'] = allowed_github_repo_owners.splitlines()
+  if add_weaver_shortcut and not 'docassemble.ALWeaver:data/questions/assembly_line.yml' in the_config.get('administrative interviews',[]):
+    if not isinstance(the_config.get('administrative interviews'), list):
+      the_config['administrative interviews'] = []
+    the_config['administrative interviews'].append('docassemble.ALWeaver:data/questions/assembly_line.yml')
+  if add_dashboard_shortcut and not 'docassemble.ALDashboard:data/questions/menu.yml' in the_config.get('administrative interviews',[]):
+    if not isinstance(the_config.get('administrative interviews'), list):
+      the_config['administrative interviews'] = []
+    the_config['administrative interviews'].append('docassemble.ALDashboard:data/questions/menu.yml')
+       
+  if add_playground_examples and not 'docassemble.ALRecipes:data/questions/examples.yml' in the_config.get('playground examples', []):
+    if not isinstance(the_config.get('playground examples'), list):
+      the_config['playground examples'] = []
+    the_config['playground examples'].insert(0, 'docassemble.ALRecipes:data/questions/examples.yml')
+    # Add the default playground examples explicitly
+    if not 'docassemble.base:data/questions/example-list.yml' in the_config['playground examples']:
+      the_config['playground examples'].append('docassemble.base:data/questions/example-list.yml')
+  if add_word_translations and not "docassemble.AssemblyLine:data/sources/es-words.yml" in the_config.get('words'):
+    if not isinstance(the_config.get('words'), list):
+      the_config['words'] = []
+    the_config['words'].append('docassemble.AssemblyLine:data/sources/es-words.yml')
+  
+  results = da_write_config(the_config)
+  save_config = True
+---
+id: welcome
+continue button field: welcome
+question: |
+  Document Assembly Line Installation
+subquestion: |
+  Thank you for using the [Document Assembly Line](https://suffolklitlab.org/docassemble-AssemblyLine-documentation/docs/)
+  framework.
+  
+  This script will help you:
+  
+  1. Install packages; and
+  2. Update your Docassemble configuration file.
+  
+  When you finish this script, you should be able to run and build your
+  own Docassemble interviews using the Assembly Line framework. For example,
+  the interviews hosted at [CourtFormsOnline.org](https://courtformsonline.org).
+  
+  You may want to pause and download a copy of your
+  [:file-download: configuration file](${ backup_file.url_for(attachment=True) }) before you continue.
+---
+code: |
+  the_config = da_get_config()
+  
+  # Create some empty structures in config for new settings
+  if not the_config.get('efile proxy'):
+    the_config['efile proxy'] = {}
+  if not the_config.get('google'):
+    the_config['google'] = {}
+  if not the_config.get('voicerss'):
+    the_config['voicerss'] = {}
+  if not the_config.get('github issues'):
+    the_config['github issues'] = {}
+  if not the_config.get('github readonly'):
+    the_config['github readonly'] = {}   
+    the_config['github readonly']['type'] = 'basic' # This just is for DA compatibility and should always be left this way    
+---
+id: configuration questions
+continue button field: basic_server_config
+question: |
+  Basic Server Settings
+subquestion: |
+  Look over the settings below. Make sure that they match your
+  organization's branding. These are **not** required for the 
+  Assembly Line, but may leak out in log files and emails. You should
+  get these right if you can.
+fields:
+  - Server title: the_config['default title']
+    default: ${ the_config.get('default title') }
+  - Server short title: the_config['default short title']
+    default: ${ the_config.get('default short title') }
+  - App name: the_config['appname']
+    default: ${ the_config.get('appname', '') }
+  - note: |
+      ---
+      Some features require background processing, which means you need
+      the "Check-in" interval set. We recommend the default interval of
+      6 seconds (6000 microseconds).
+    show if:
+      code: |
+        the_config.get('checkin interval') != 6000
+  - Check-in interval: the_config['checkin interval']
+    default: 6000
+    show if:
+      code: |
+        the_config.get('checkin interval') != 6000
+  - note: |
+      ---
+      The Assembly Line makes extensive use of Font Awesome. Some icons
+      may not work if you do not use font awesome as your icon set.
+    show if:
+      code: |
+        the_config.get('default icons') != 'font awesome'
+  - Default icon set: the_config['default icons']
+    default: font awesome
+    show if:
+      code: |
+        the_config.get('default icons') != 'font awesome'
+---
+id: api configuration
+continue button field: recommended_api_config
+question: |
+  Recommended API Configuration
+subquestion: |
+  Below is a list of API configurations that we recommend that you make.
+  
+  If you do not already have these APIs enabled, you may want to take a minute
+  to sign up for each API. You can can use this page to make it a little
+  easier to write the updated values in your configuration file.
+  
+  If you do not have the API key now, that's OK. We will add a placeholder in 
+  your configuration file that may still make it easier to edit and update
+  later.
+fields:
+  - note: |
+      ---
+      We recommend setting up the following "free" / generous free
+      tier API keys:
+      
+      * Server-run API queries: [Google API for geocoding](https://developers.google.com/maps/documentation/geocoding/overview)
+        (Use an IP address restriction--this server's IP address appears to be ${ bold(requests.get('https://checkip.amazonaws.com').text.strip() or "UNKNOWN") }) (credit card required)
+      * Frontend browser API queries: [Google JavaScript API for maps](https://developers.google.com/maps/documentation/javascript/overview) / [Google places for autocompletion](https://developers.google.com/maps/documentation/places/web-service/overview)
+        (Use a referer restriction ) (credit card required)
+      * [VoiceRSS](http://www.voicerss.org/) screen reader (no credit card required)
+      
+      Please confirm that you have enabled "geocoding", "maps javascript" and "places" on
+      your Google Cloud Console account. Billing must also be turned on,
+      although you can set a quota well below the threshold that would trigger
+      any costs.
+      
+      You should also set up the following:
+      
+      * Mail (SendGrid or Mailgun have free tiers, but limited)
+      * Twilio for SMS
+  - Google API key (for geocoding, IP restrictions): the_config['google']['api key']
+    default: ${ the_config['google'].get('api key') }
+  - Google Maps API key (for maps and address auto completion): the_config['google']['google maps api key']
+    default: ${ the_config['google'].get('api key') }
+  - Enable VoiceRSS: the_config['voicerss']['enable']
+    datatype: yesno
+    default: True
+  - VoiceRSS API Key: the_config['voicerss']['key']
+    default: ${ the_config['voicerss'].get('key') }    
+  - note: |
+      % if not the_config.get('mail'):
+      ** You do not appear to have a valid mail configuration.**
+      Follow the Docassemble instructions to [setup a mail 
+      server](https://docassemble.org/docs/config.html#mail) **after**
+      you finish this installation process.
+      
+      We recommend using SendGrid, not an SMTP server.
+      % endif
+  - note: |
+      ---
+      If you choose to use the [e-file proxy server](https://github.com/SuffolkLITLab/EfileProxyServer),
+      you should also generate or [get an API token](https://github.com/SuffolkLITLab/EfileProxyServer/#making-api-tokens)
+      to authenticate this server's connection.
+      
+      Using the e-file connection is rare. Feel free to skip this step. 
+  - Skip efile configuration: skip_efile
+    datatype: yesno
+  - E-file server URL: the_config['efile proxy']['url']
+    default: ${ the_config['efile proxy'].get('url') or "https://efile.suffolklitlab.org:9000" }
+    hide if: skip_efile
+  - E-file proxy api key: the_config['efile proxy']['api key']
+    default: ${ the_config['efile proxy'].get('api key') }
+    hide if: skip_efile
+  - E-file proxy JeffNet api key (rare): the_config['efile proxy']['jeffnet api token']
+    default: ${ the_config['efile proxy'].get('jeffnet api token') }
+    hide if: skip_efile
+    required: False
+---
+id: feedback form config
+continue button field: feedback_form_config
+question: |
+  GitHub feedback and about information
+subquestion: |
+  You should configure a dedicated GitHub account with permission to make
+  pull requests on public repositories and generate a private access token
+  for it.
+  
+  This feature is used to add feedback to production interviews as well
+  as to display a "last updated" date on the about page.
+fields:
+  - note: |
+      #### GitHub Feedback form
+  - Username: the_config['github issues']['username']
+  - Private token: the_config['github issues']['token']
+  - Default Github organization: the_config['github issues']['default repository owner']
+  - Allowed repository owners (one per line): allowed_github_repo_owners
+    datatype: area
+    default: |
+      ${ "\n".join(the_config['github issues'].get('allowed repository owners',[])) }
+  - note: |
+      #### GitHub account for reading last updated time
+  - Username: the_config['github readonly']['username']
+  - Private token: the_config['github readonly']['username']
+---
+id: shortcuts
+continue button field: menu_shortcut_config
+question: |
+  Menu Shortcuts
+fields:
+  - Add shortcut to Dashboard: add_dashboard_shortcut
+    datatype: yesno
+    default: True
+  - Add shortcut to Weaver: add_weaver_shortcut
+    datatype: yesno
+    default: True
+  - Add Assembly-Line model questions to Playground: add_playground_examples
+    datatype: yesno
+    default: True  
+  - Add words.yml translations: add_word_translations
+    datatype: yesno
+    default: True  
+---
 variable name: mandatory_packages
 data:
-  "https://github.com/SuffolkLITLab/docassemble-ALToolbox":
-    label: ALToolbox
-    help: |
-      Utility functions and web components that may help with or without the
-      Assembly Line framework.
   "https://github.com/SuffolkLITLab/docassemble-AssemblyLine":
     label: Assembly Line (Core)
     help: |
       The core Assembly Line runtime code, with default styling.
+  "https://github.com/SuffolkLITLab/docassemble-ALToolbox":
+    label: ALToolbox
+    help: |
+      Utility functions and web components that may help with or without the
+      Assembly Line framework. This will be installed regardles if you select
+      "Core" above, but you can force an independent update here.
+  "https://github.com/SuffolkLITLab/docassemble-GithubFeedbackForm":
+    label: Feedback Form
+    help: |
+      Feedback form used in the footer by default. This is a dependency of
+      the "Core" package above that will always be installed, but you can
+      force an independent update here.      
 ---
 variable name: optional_packages
 data:
@@ -20,6 +267,11 @@ data:
     label: ALWeaver
     help: |
       A tool to help turn templates into draft interviews quickly.
+  "https://github.com/SuffolkLITLab/docassemble-ALRecipes":
+    label: "Playground examples"
+    help: |
+      Model questions for composite fields, such as name, address,
+      and more that you can insert directly into interviews.
   "https://github.com/SuffolkLITLab/docassemble-InterviewStats/":
     label: InterviewStats
     help: |
@@ -28,33 +280,30 @@ data:
       download for all Assembly Line packages)
   "https://github.com/SuffolkLITLab/docassemble-ALMassachusetts":
     label: Massachusetts-specific questions
+  "https://github.com/GBLS/docassemble-MACourts":
+    label: Massachusetts-specific list of courts
+    help: |
+      This is installed automatically if you select "Massachusetts-
+      specific questions".
   "https://github.com/SuffolkLITLab/docassemble-MassAccess":
     label: |
       Mass Access / Court Forms Online branding
     help: |
-      Logo and branding for Court Forms Online / Suffolk LIT Lab
+      Logo and branding for Court Forms Online / Suffolk LIT Lab. Selecting
+      this will also automatically install the list of courts and Massachusetts-
+      specific questions.
   "https://github.com/SuffolkLITLab/docassemble-ALDashboard":
     label: ALDashboard
     help: |
-      A menu and dashboard for small administrative tasks
+      A menu and dashboard for small administrative tasks, which includes
+      the installation script you are running now.
   "https://github.com/SuffolkLITLab/docassemble-EFSPIntegration/":
     label: E-filing client
     help: |
       E-filing client for Tyler EFM
 ---
-comment: |
-  manage_api
-  
-  from docassemble.webapp.daredis import r, r_user
----
 modules:
   - .aldashboard
----
-mandatory: True
-code: |
-  selected_mandatory_packages
-  al_install_done
-  end_screen
 ---
 code: |
   for pkg_url in selected_mandatory_packages.true_values() + selected_optional_packages.true_values():
@@ -72,6 +321,7 @@ fields:
     default:
       - https://github.com/SuffolkLITLab/docassemble-ALToolbox
       - https://github.com/SuffolkLITLab/docassemble-AssemblyLine
+      - https://github.com/SuffolkLITLab/docassemble-GithubFeedbackForm
     none of the above: False      
   - Optional packages: selected_optional_packages
     datatype: checkboxes
