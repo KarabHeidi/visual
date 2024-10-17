@@ -32,6 +32,9 @@ buttons:
   - Validate Translation Files: exit
     url: ${ interview_url(i=user_info().package + ":validate_translation.yml") }
     image: language
+  - Validate an attachment `fields` block: exit
+    url: ${ interview_url(i=user_info().package + ":validate_attachment.yml") }
+    image: paperclip
   - Stats: exit
     url: ${ interview_url(i="docassemble.InterviewStats:data/questions/stats.yml") }
     image: chart-bar
