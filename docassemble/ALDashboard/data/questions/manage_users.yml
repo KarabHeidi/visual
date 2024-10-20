@@ -11,6 +11,7 @@ metadata:
 ---
 modules:
   - .aldashboard
+  - .create_package
 ---
 mandatory: True
 id: interview order
@@ -20,7 +21,14 @@ code: |
     do_update_password
   elif user_task == 'elevate_permissions':
     do_update_privileges
+  elif user_task == 'download_playground':
+    do_download_playground
   ending_screen    
+---
+code: |
+  user_lookup = {}
+  for user in get_users_and_name():
+    user_lookup[user[0]] = user['email']
 ---
 id: select user
 question: |
@@ -30,7 +38,7 @@ fields:
     datatype: integer
     input type: combobox
     code: |
-      [{user[0]: f"{user['first_name']} {user['last_name']} {user['email']}"} for user in get_users_and_name()]      
+      [{user[0]: f"{user['first_name']} {user['last_name']} {user['email']}"} for user in get_users_and_name()]
     exclude:
       - "2"
     # User ID 2 is the "cron" user and should not be managed here        
@@ -38,8 +46,8 @@ fields:
     datatype: radio
     choices:
       - Reset password: reset_password
-      # - Download playground files: download_playground
-      - Change user permissions: elevate_permissions
+      - Download playground files: download_playground
+      - Change user permissions: elevate_permissions      
   - New password: new_user_password
     datatype: password
     show if:
@@ -75,6 +83,15 @@ code: |
 code: |
   set_user_info(user_id=chosen_user, privileges=new_permission_level.true_values().elements )
   do_update_privileges = True
+---
+id: download playground
+question: |
+  Playground download for ${ user_lookup[chosen_user] }
+subquestion: |
+  % for project in get_list_of_projects(chosen_user):
+  [${project}]( ${ create_user_playground_zip(chosen_user, space_to_underscore(user_lookup[chosen_user]), project).url_for() })
+  % endfor
+event: do_download_playground
 ---
 code: |
   def valid_password(pword):
