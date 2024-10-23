@@ -88,7 +88,7 @@ id: download playground
 question: |
   Playground download for ${ user_lookup[chosen_user] }
 subquestion: |
-  % for project in get_list_of_projects(chosen_user):
+  % for project in get_list_of_projects(chosen_user) + ['default']:
   [${project}]( ${ create_user_playground_zip(chosen_user, space_to_underscore(user_lookup[chosen_user]), project).url_for() })
   % endfor
 event: do_download_playground
