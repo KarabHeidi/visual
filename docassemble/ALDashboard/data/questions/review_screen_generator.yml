@@ -1,3 +1,7 @@
+metadata:
+  title: |
+    Generate a draft review screen
+  temporary session: True
 ---
 include:
   - nav.yml
@@ -59,12 +63,15 @@ code: |
         label_pair = next((pair for pair in field.items() if pair[0] not in not_labels), None)
         if label_pair:
           if field.get('datatype') in ['yesno','yesnoradio','yesnowide']:
-            review['button'] += str(label_pair[0]) + " : " + "${ word(yesno(" + str(label_pair[1]) + ")) }\n\n"
+            review['button'] += f"{label_pair[0]}: ${{ word(yesno({ label_pair[1] }))) }}\n\n"
           else:
-            review['button'] += str(label_pair[0]) + " : " + "${ " + str(label_pair[1]) + " }\n\n"
-            review_fields_temp.append(review)
-            continue
-  review_yaml = {'review': review_fields_temp}
+            review['button'] += f"{label_pair[0]}: ${{ showifdef('{label_pair[1]}') }}\n\n"
+      review_fields_temp.append(review)
+  review_yaml = {
+    "id": "review screen",
+    "question": "Review your answers",
+    'review': review_fields_temp
+    }
 ---
 code: |
   not_labels = ['datatype','default', 'help', 'min','max','maxlength','minlength','rows','choices','input type','required','hint','code','exclude','none of the above','shuffle','show if','hide if','enable if','disable if','js show if','js hide if','js enable if','js disable if','disable others','note','html','field metadata','accept','validate','address autocomplete']
