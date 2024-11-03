@@ -15,30 +15,33 @@ question: |
   ALDashboard 
 buttons:
   - Manage Users: exit  
-    url: ${ interview_url(i=user_info().package + ":manage_users.yml") }
-    image: users-cog
+    url: ${ interview_url(i=user_info().package + ":manage_users.yml", reset=1) }
+    image: users-cog    
   - Install Assembly Line: exit
-    url: ${ interview_url(i=user_info().package + ":install_assembly_line.yml") }
+    url: ${ interview_url(i=user_info().package + ":install_assembly_line.yml", reset=1) }
     image: tasks
   - Install Packages: exit
-    url: ${ interview_url(i=user_info().package + ":install_packages.yml") }
+    url: ${ interview_url(i=user_info().package + ":install_packages.yml", reset=1) }
     image: cogs    
   - Update Packages: exit
-    url: ${ interview_url(i=user_info().package + ":update_packages.yml") }
+    url: ${ interview_url(i=user_info().package + ":update_packages.yml", reset=1) }
     image: sync
   - View Answer Files: exit
-    url: ${ interview_url(i=user_info().package + ":list_sessions.yml") }
+    url: ${ interview_url(i=user_info().package + ":list_sessions.yml", reset=1) }
     image: file-alt
   - Validate Translation Files: exit
-    url: ${ interview_url(i=user_info().package + ":validate_translation.yml") }
+    url: ${ interview_url(i=user_info().package + ":validate_translation.yml", reset=1) }
     image: language
-  - Validate an attachment `fields` block: exit
-    url: ${ interview_url(i=user_info().package + ":validate_attachment.yml") }
+  - Validate an attachment fields block: exit
+    url: ${ interview_url(i=user_info().package + ":validate_attachment.yml", reset=1) }
     image: paperclip
+  - Generate a review screen draft: exit
+    url: ${ interview_url(i=user_info().package + ":review_screen_generator.yml", reset=1) }
+    image: pencil-alt
   - Stats: exit
-    url: ${ interview_url(i="docassemble.InterviewStats:data/questions/stats.yml") }
+    url: ${ interview_url(i="docassemble.InterviewStats:data/questions/stats.yml", reset=1) }
     image: chart-bar
   - Package Scanner: exit
-    url: ${ interview_url(i=user_info().package + ":package_scanner.yml") }
+    url: ${ interview_url(i=user_info().package + ":package_scanner.yml", reset=1) }
     image: search
     

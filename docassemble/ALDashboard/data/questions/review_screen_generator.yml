@@ -1,0 +1,89 @@
+metadata:
+  title: |
+    Generate a draft review screen
+  temporary session: True
+---
+include:
+  - nav.yml
+#---
+#modules:
+#  - ruamel.yaml
+#---
+#code: yaml = ruamel.yaml
+#---
+#modules:
+#  - docassemble.assemblylinewizard.interview_generator
+---
+mandatory: True
+code: |
+  yaml_file
+  results
+---
+question: |
+  Upload a yaml file
+fields:
+  - Yaml file: yaml_file
+    datatype: file
+---
+code: |
+  import ruamel.yaml as yaml
+  yaml_parsed = list(yaml.safe_load_all(yaml_file.slurp()))
+---
+code: |
+  # identify all questions that set a variable in the interview
+  # they will be added as a dictionary of label: field, with other modifiers
+  questions_temp = []
+  for doc in yaml_parsed:  
+    if doc:
+      fields_temp = []
+      if 'fields' in doc:
+        fields_temp.extend(doc.get('fields'))
+      elif 'yesno' in doc:
+        fields_temp.append({doc.get('question'): doc.get('yesno'), 'datatype':'yesno'})
+      elif 'noyes' in doc:
+        fields_temp.append({doc.get('question'): doc.get('noyes'), 'datatype':'noyes'})
+      elif 'signature' in doc:
+        fields_temp.append({doc.get('question'): doc.get('signature'), 'datatype': 'signature'})
+      elif 'field' in doc:
+        if 'choices' in doc or 'buttons' in doc:
+          fields_temp.append({doc.get('question'): doc.get('field'), 'datatype': 'radio' })
+    questions_temp.append(fields_temp)
+  questions = questions_temp
+  del questions_temp
+---
+code: |
+  review_fields_temp = []
+  for fields in questions:
+    if len(fields):
+      first_label_pair = next(pair for pair in fields[0].items() if pair[0] not in not_labels)
+      review = {}
+      review['Edit'] = first_label_pair[1] # This will be the trigger variable in edit button
+      review['button'] = ""
+      for field in fields:
+        label_pair = next((pair for pair in field.items() if pair[0] not in not_labels), None)
+        if label_pair:
+          if field.get('datatype') in ['yesno','yesnoradio','yesnowide']:
+            review['button'] += f"{label_pair[0]}: ${{ word(yesno({ label_pair[1] }))) }}\n\n"
+          else:
+            review['button'] += f"{label_pair[0]}: ${{ showifdef('{label_pair[1]}') }}\n\n"
+      review_fields_temp.append(review)
+  review_yaml = {
+    "id": "review screen",
+    "question": "Review your answers",
+    'review': review_fields_temp
+    }
+---
+code: |
+  not_labels = ['datatype','default', 'help', 'min','max','maxlength','minlength','rows','choices','input type','required','hint','code','exclude','none of the above','shuffle','show if','hide if','enable if','disable if','js show if','js hide if','js enable if','js disable if','disable others','note','html','field metadata','accept','validate','address autocomplete']
+---
+code: |
+  # import pyyaml
+  # from yaml import dump
+  from pyaml import dump
+  review_yaml_dumped = dump(review_yaml, string_val_style='|')
+---
+event: results
+question: |
+subquestion: |  
+  ${ indent(review_yaml_dumped,4) } 
+  
