@@ -44,4 +44,6 @@ buttons:
   - Package Scanner: exit
     url: ${ interview_url(i=user_info().package + ":package_scanner.yml", reset=1) }
     image: search
-    
+  - Validate DOCX template: exit
+    url: ${ interview_url(i=user_info().package + ":validate_docx.yml", reset=1) }
+    image: file-word

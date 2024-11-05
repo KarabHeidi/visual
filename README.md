@@ -12,6 +12,7 @@ A single pane of glass that centralizes some tedious Docassemble admin configura
 1. List the files inside a particular package installed on the server.
 1. Gather files from a user who left the organization/unknown username and password.
 1. Review screen generator
+1. validate DOCX Jinja2 templates
 
 Ideas:
 1. Add a link to the dispatch directive for an existing file in an existing package.
