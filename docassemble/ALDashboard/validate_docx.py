@@ -90,7 +90,7 @@ def get_jinja_errors(the_file:DAFile, env=None)->str:
   
   try: 
     the_xml = docx_template.get_xml()
-    the_xml = re.sub(r'<w:p>', '\n<w:p>', the_xml)
+    #the_xml = re.sub(r'<w:p>', '\n<w:p>', the_xml)
     the_xml = re.sub(r'({[\%\{].*?[\%\}]})', fix_quotes, the_xml)
     the_xml = docx_template.patch_xml(the_xml)
     docx_template.render({}, jinja_env=env)
@@ -99,4 +99,6 @@ def get_jinja_errors(the_file:DAFile, env=None)->str:
     if hasattr(the_error, 'docx_context'):
       errmess += "\n\nContext:\n" + "\n".join(map(lambda x: "  " + x, the_error.docx_context))
     return errmess
+  except Exception as the_error:
+    return str(the_error)
   

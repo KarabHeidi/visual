@@ -18,7 +18,7 @@ code: |
   all_files = []
   for file in get_upload:
     all_files.append({"file": file.filename,
-      "errors": get_jinja_errors(get_upload, env=Environment(loader=BaseLoader,undefined=DASkipUndefined))
+      "errors": get_jinja_errors(file, env=Environment(loader=BaseLoader,undefined=DASkipUndefined))
     })    
 ---
 question: |
@@ -36,11 +36,19 @@ question: |
   % endif
 subquestion: |
   % if any(f for f in all_files if f["errors"]):
+  ### Files with errors
+  
+  % for f in (f for f in all_files if f["errors"]):
+  * ${ f["file"] }
+  % endfor
+  
   % for f in all_files:
   % if f["errors"]:
   #### ${ f["file"] }
   % for error in f["errors"]:
-  ${ error }
+  ```
+  ${ indent(error) }
+  ```
   % endfor
   % endif
   % endfor
