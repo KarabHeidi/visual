@@ -4,3 +4,6 @@
   text-align: center;
   color: #861e36;
 }
+.btn-da-custom svg { 
+  height: 3em !important;
+}
