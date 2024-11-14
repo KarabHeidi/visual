@@ -1,0 +1,109 @@
+---
+include:
+  - nav.yml
+---
+imports:
+  - formfyxer
+---
+objects:
+  - new_pdf: DAFile
+---
+mandatory: True
+code: |
+  do_what
+  if do_what == "normalize":
+    process_field_normalization
+    view_normalized_pdf
+  elif do_what == "recognize":
+    process_field_recognition
+    view_recognized_pdf
+  elif do_what == "copy":
+    copy_pdf_fields
+    view_copied_pdf
+---
+question: |
+  Select a PDF task
+fields:
+  - no label: do_what
+    datatype: radio
+    choices:
+      - Normalize fields: normalize
+      - Rename fields: rename
+      - Copy PDF fields: copy
+      - Recognize PDF fields: recognize
+  - Source PDF: source_pdf
+    datatype: file
+  - note: |
+      **Warning**: all fields in the destination PDF
+      will be replaced with fields from the source PDF.
+    show if:
+      variable: do_what
+      is: copy
+  - Destination PDF: destination_pdf
+    datatype: file
+    show if:
+      variable: do_what
+      is: copy
+---
+code: |
+  # import os  
+  base_name = source_pdf[0].filename
+---
+code: |
+  formfyxer.parse_form(source_pdf[0].path(), title=base_name, jur="MA", normalize=1,rewrite=1)
+  source_pdf[0].commit()
+  process_field_normalization = True  
+---
+code: |
+  new_pdf.initialize(filename = f"fields_{base_name}")
+  formfyxer.auto_add_fields(source_pdf[0].path(), new_pdf.path())
+  
+  # also normalize field names after newly recognizing them
+  formfyxer.parse_form(new_pdf.path(), title=base_name, jur="MA", normalize=1, rewrite=1)
+  
+  new_pdf.commit()
+  process_field_recognition = True
+---
+code: |
+  new_pdf.initialize(filename=destination_pdf[0].filename)
+  
+  # Returns a PikePDF object
+  tmp_pdf = formfyxer.swap_pdf_page(source_pdf=source_pdf[0].path(), destination_pdf=destination_pdf[0].path())
+  
+  tmp_pdf.save(new_pdf.path())  
+  new_pdf.commit()
+  
+  del tmp_pdf # PikePDF might not be serializable with Pickle
+  copy_pdf_fields = True
+---
+event: view_normalized_pdf
+question: |
+  Here is your normalized PDF
+subquestion: |
+  [:file-pdf: ${ source_pdf[0].filename }](${ source_pdf[0].url_for() })
+  
+  The new PDF field names are:
+  
+  % for field in source_pdf[0].get_pdf_fields():
+  * ${ field[0] }
+  % endfor
+---
+event: view_recognized_pdf
+question: |
+  Here is the PDF with recognized fields
+subquestion: |
+  [:file-pdf: ${ new_pdf.filename }](${ new_pdf.url_for() })
+  
+  The new PDF field names are:
+  
+  % for field in new_pdf.get_pdf_fields():
+  * ${ field[0] }
+  % endfor
+---
+event: view_copied_pdf
+question: |
+  Here is the PDF with copied fields
+subquestion: |
+  [:file-pdf: ${ new_pdf.filename }](${ new_pdf.url_for() })
+
+  
