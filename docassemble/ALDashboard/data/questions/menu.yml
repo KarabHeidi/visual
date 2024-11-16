@@ -44,3 +44,5 @@ buttons:
     image: language
   - Validate an attachment fields block: ${ interview_url(i=user_info().package + ":validate_attachment.yml", reset=1) }
     image: paperclip
+  - PDF tools:  ${ interview_url(i=user_info().package + ":pdf_wrangling.yml", reset=1) }
+    image: file-pdf
