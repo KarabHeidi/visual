@@ -11,7 +11,18 @@ code: |
   welcome
   basic_server_config
   recommended_api_config
-  feedback_form_config
+  
+  # GitHub
+  if not skip_github:
+    feedback_form_config
+    github_owners_list
+    save_repo_owners
+    if len(the_config['github issues']['allowed repository owners']) == 1:
+      set_default_owner_from_list
+    else:
+      github_owners_default
+    cofirm_github_info
+  
   menu_shortcut_config
   save_config
   selected_mandatory_packages    
@@ -21,8 +32,17 @@ code: |
 code: |
   backup_file = da_get_config_as_file()
 ---
+depends on:
+  - allowed_github_repo_owners
 code: |
   the_config['github issues']['allowed repository owners'] = allowed_github_repo_owners.splitlines()
+  save_repo_owners = True
+---
+code: |
+  the_config['github issues']['default repository owner'] = the_config['github issues']['allowed repository owners'][0]
+  set_default_owner_from_list = True
+---
+code: |
   if add_weaver_shortcut and not 'docassemble.ALWeaver:data/questions/assembly_line.yml' in the_config.get('administrative interviews',[]):
     if not isinstance(the_config.get('administrative interviews'), list):
       the_config['administrative interviews'] = []
@@ -198,31 +218,122 @@ fields:
     hide if: skip_efile
     required: False
 ---
-id: feedback form config
+id: github intro
+# TODO: Allow user to pick which of the two functionalities they want
+question: |
+  Feedback and "About" page information with GitHub
+subquestion: |
+  Assembly Line can use GitHub to let you:
+  
+  1. Get user feedback about each interview.
+  2. Display a "last updated" date on the "About" page of an interview.
+  
+  You can skip this setup step.
+fields:
+  - Skip setting up GitHub: skip_github
+    datatype: yesno
+---
+# This must be tested with a private repository
+#  If your GitHub organization's repositories are private, the account must have permission to see it and file issues.
+id: github PAT
 continue button field: feedback_form_config
 question: |
-  GitHub feedback and about information
+  GitHub authentication
 subquestion: |
-  You should configure a dedicated GitHub account with permission to make
-  pull requests on public repositories and generate a private access token
-  for it.
+  First, in order to use GitHub you should create a dedicated GitHub account. You can use an account that already exists, but we recommend having an account that only handles Assembly Line functionality.
   
-  This feature is used to add feedback to production interviews as well
-  as to display a "last updated" date on the about page.
+  The account must have permission make pull requests on your GitHub organization's repositories. You can read [GitHub's documentation about setting an account's permissions](https://docs.github.com/en/organizations/managing-access-to-your-organizations-repositories/repository-roles-for-an-organization).
+  
+  Give us the information about that account and set up its permissions.
 fields:
+  - What is the username of the account: the_config['github issues']['username']
+    default: ${ the_config['github issues'].get('username', '') }
+    help: |
+      This will set the `config['github issues']['username']` and the `config['github readonly']['username']` values.
   - note: |
-      #### GitHub Feedback form
-  - Username: the_config['github issues']['username']
-  - Private token: the_config['github issues']['token']
-  - Default Github organization: the_config['github issues']['default repository owner']
-  - Allowed repository owners (one per line): allowed_github_repo_owners
+      Now you need to authorize your docassemble server to use that account to make issues. You can do that by creating a personal access token (PAT):
+
+      1. Follow directions to start making a personal access token (PAT) for the account on GitHub. You can find the directions in a section at [this GitHub documentation page](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token).
+      1. Set the expiration date to "No expiration".
+      1. Tap the checkbox for “repo” permissions.
+      1. Finish creating the personal access token.
+      1. Copy the token and paste it below
+  - Personal access token: the_config['github issues']['token']
+    default: ${ the_config['github issues'].get('token', '') }
+    help: |
+      This will set the `config['github issues']['token']` and the `config['github readonly']['token']` values.
+---
+id: github owners list
+continue button field: github_owners_list
+question: |
+  Avoid GitHub issue spamming
+subquestion: |
+  To make sure that no one can use the feedback forms to spam just any GitHub repository with issues, you must limit which repositories your feedback forms can access. You can do this by limiting your issues to repositories owned by specific users or organizations.
+      
+  An interview can name its own repository's owner, but you must make sure that the owner is an owner that you have approved.
+      
+  Here, list the usernames of all the GitHub users or organizations who own repositories where you will allow users make issues.
+  
+  This will set the `config['github issues']['allowed repository owners']` value.
+  
+  You can just list one if you want.
+fields:
+  - Usernames[BR](one per line): allowed_github_repo_owners
     datatype: area
     default: |
       ${ "\n".join(the_config['github issues'].get('allowed repository owners',[])) }
-  - note: |
-      #### GitHub account for reading last updated time
-  - Username: the_config['github readonly']['username']
-  - Private token: the_config['github readonly']['username']
+---
+id: github owners default
+continue button field: github_owners_default
+question: |
+  Default GitHub repository owner
+subquestion: |
+  Finally, you can also choose a default repository owner so that interviews don't have to each list their own. Pick one of the usernames to be the default repository owner.
+  
+  This will set the `config['github issues']['default repository owner']` value.
+fields:
+  - Default account name: the_config['github issues']['default repository owner']
+    input type: radio
+    code: |
+      the_config['github issues'].get('allowed repository owners', [])
+---
+code: |
+  the_config['github readonly']['username'] = the_config['github issues']['username']
+  the_config['github readonly']['token'] = the_config['github issues']['token']
+---
+id: confirm github info
+continue button field: cofirm_github_info
+question: |
+  Is this GitHub information correct?
+review:
+  - Edit: the_config['github issues']['username']
+    button: |
+      ##### Authentication
+      
+      Config setting | Value
+      :- | :-
+      `config['github issues']['username']` | ${ the_config['github issues']['username'] }
+      `config['github issues']['token']` | **\*\*\*${ the_config['github issues']['token'][-4:] }
+      `config['github readonly']['username']` | ${ the_config['github issues']['username'] }
+      `config['github readonly']['token']` | **\*\*\*${ the_config['github issues']['token'][-4:] }
+      
+      ---
+  - Edit: allowed_github_repo_owners
+    button: |
+      ##### List of allowed repository owners
+      
+      Config setting | Value
+      :- | :-
+      `config['github issues']['allowed repository owners']` | ${ the_config['github issues'].get('allowed repository owners', []) }
+      
+      ---
+  - Edit: the_config['github issues']['default repository owner']
+    button: |
+      ##### Default repository owner
+      
+      Config setting | Value
+      :- | :-
+      `config['github issues']['default repository owner']` | ${ the_config['github issues']['default repository owner'] }
 ---
 id: shortcuts
 continue button field: menu_shortcut_config
