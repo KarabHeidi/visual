@@ -13,19 +13,19 @@ code: |
   recommended_api_config
   
   # GitHub
-  if not skip_github:
-    feedback_form_config
-    github_owners_list
-    save_repo_owners
-    if len(the_config['github issues']['allowed repository owners']) == 1:
-      set_default_owner_from_list
-    else:
-      github_owners_default
-    cofirm_github_info
+  feedback_form_config
+  github_owners_list
+  save_repo_owners
+  if len(the_config['github issues']['allowed repository owners']) == 1:
+    set_default_owner_from_list
+  else:
+    github_owners_default
+  auto_fill_leftover_github_values
+  cofirm_github_info
   
   menu_shortcut_config
   save_config
-  selected_mandatory_packages    
+  selected_mandatory_packages
   al_install_done
   end_screen
 ---
@@ -218,28 +218,18 @@ fields:
     hide if: skip_efile
     required: False
 ---
-id: github intro
-# TODO: Allow user to pick which of the two functionalities they want
-question: |
-  Feedback and "About" page information with GitHub
-subquestion: |
-  Assembly Line can use GitHub to let you:
-  
-  1. Get user feedback about each interview.
-  2. Display a "last updated" date on the "About" page of an interview.
-  
-  You can skip this setup step.
-fields:
-  - Skip setting up GitHub: skip_github
-    datatype: yesno
----
 # This must be tested with a private repository
 #  If your GitHub organization's repositories are private, the account must have permission to see it and file issues.
 id: github PAT
 continue button field: feedback_form_config
 question: |
-  GitHub authentication
+  Feedback and "About" page information with GitHub
 subquestion: |
+  Assembly Line uses GitHub to let you:
+  
+  1. Get user feedback about each interview.
+  2. Display a "last updated" date on the "About" page of an interview.
+
   First, in order to use GitHub you should create a dedicated GitHub account. You can use an account that already exists, but we recommend having an account that only handles Assembly Line functionality.
   
   The account must have permission make pull requests on your GitHub organization's repositories. You can read [GitHub's documentation about setting an account's permissions](https://docs.github.com/en/organizations/managing-access-to-your-organizations-repositories/repository-roles-for-an-organization).
@@ -298,42 +288,41 @@ fields:
       the_config['github issues'].get('allowed repository owners', [])
 ---
 code: |
+  # Password seems to be required by al_general.py
+  the_config['github issues']['password'] = the_config['github issues']['token']
   the_config['github readonly']['username'] = the_config['github issues']['username']
   the_config['github readonly']['token'] = the_config['github issues']['token']
+  the_config['github readonly']['password'] = the_config['github issues']['token']
+  auto_fill_leftover_github_values = True
 ---
 id: confirm github info
 continue button field: cofirm_github_info
 question: |
   Is this GitHub information correct?
 review:
-  - Edit: the_config['github issues']['username']
+  - Edit:
+      - the_config['github issues']['username']
+      - allowed_github_repo_owners
+      - the_config['github issues']['default repository owner']
     button: |
-      ##### Authentication
+      The personal access token values have been hidden here for better security.
       
-      Config setting | Value
-      :- | :-
-      `config['github issues']['username']` | ${ the_config['github issues']['username'] }
-      `config['github issues']['token']` | **\*\*\*${ the_config['github issues']['token'][-4:] }
-      `config['github readonly']['username']` | ${ the_config['github issues']['username'] }
-      `config['github readonly']['token']` | **\*\*\*${ the_config['github issues']['token'][-4:] }
-      
-      ---
-  - Edit: allowed_github_repo_owners
-    button: |
-      ##### List of allowed repository owners
-      
-      Config setting | Value
-      :- | :-
-      `config['github issues']['allowed repository owners']` | ${ the_config['github issues'].get('allowed repository owners', []) }
-      
-      ---
-  - Edit: the_config['github issues']['default repository owner']
-    button: |
-      ##### Default repository owner
-      
-      Config setting | Value
-      :- | :-
-      `config['github issues']['default repository owner']` | ${ the_config['github issues']['default repository owner'] }
+      <pre>
+      <code>
+      github issues:[BR]
+          username: ${ the_config['github issues']['username'] }[BR]
+          token: **\*\*\*${ the_config['github issues']['token'][-4:] }[BR]
+          allowed repository owners:[BR]
+          % for owner in the_config['github issues']['allowed repository owners']:
+          - ${ owner }[BR]
+          % endfor
+          default repository owner: ${ the_config['github issues']['default repository owner'] }[BR]
+      github readonly:[BR]
+          username: ${ the_config['github issues']['username'] }[BR]
+          token: **\*\*\*${ the_config['github issues']['token'][-4:] }
+      </code>
+      </pre>
+      [BR]
 ---
 id: shortcuts
 continue button field: menu_shortcut_config
@@ -370,7 +359,7 @@ data:
     help: |
       Feedback form used in the footer by default. This is a dependency of
       the "Core" package above that will always be installed, but you can
-      force an independent update here.      
+      force an independent update here. 
 ---
 variable name: optional_packages
 data:
@@ -423,7 +412,8 @@ code: |
   al_install_done = True
 ---
 question: |
-  What packages do you want to install or update?  
+  What packages do you want to install or update?
+continue button label: Install Assembly Line
 fields:
   - Core packages: selected_mandatory_packages
     datatype: checkboxes
