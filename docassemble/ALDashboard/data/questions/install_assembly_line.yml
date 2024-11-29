@@ -20,7 +20,6 @@ code: |
     set_default_owner_from_list
   else:
     github_owners_default
-  auto_fill_leftover_github_values
   
   menu_shortcut_config
   save_config
@@ -98,9 +97,7 @@ code: |
     the_config['voicerss'] = {}
   if not the_config.get('github issues'):
     the_config['github issues'] = {}
-  if not the_config.get('github readonly'):
-    the_config['github readonly'] = {}   
-    the_config['github readonly']['type'] = 'basic' # This just is for DA compatibility and should always be left this way    
+    the_config['github issues']['type'] = 'basic' # This just is for DA compatibility and should always be left this way    
 ---
 id: configuration questions
 continue button field: basic_server_config
@@ -275,14 +272,6 @@ fields:
     input type: radio
     code: |
       the_config['github issues'].get('allowed repository owners', [])
----
-code: |
-  # Password seems to be required by al_general.py
-  the_config['github issues']['password'] = the_config['github issues']['token']
-  the_config['github readonly']['username'] = the_config['github issues']['username']
-  the_config['github readonly']['token'] = the_config['github issues']['token']
-  the_config['github readonly']['password'] = the_config['github issues']['token']
-  auto_fill_leftover_github_values = True
 ---
 id: shortcuts
 continue button field: menu_shortcut_config
