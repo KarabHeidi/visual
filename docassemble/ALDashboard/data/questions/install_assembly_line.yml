@@ -96,8 +96,7 @@ code: |
   if not the_config.get('voicerss'):
     the_config['voicerss'] = {}
   if not the_config.get('github issues'):
-    the_config['github issues'] = {}
-    the_config['github issues']['type'] = 'basic' # This just is for DA compatibility and should always be left this way    
+    the_config['github issues'] = {} 
 ---
 id: configuration questions
 continue button field: basic_server_config
