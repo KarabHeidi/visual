@@ -5,15 +5,25 @@ include:
 imports:
   - requests
 ---
+objects:
+  - installer: ALPackageInstaller
+---
 mandatory: True
 code: |
+  # Show any errors first
+  if len(installer.errors) > 0:
+    installer.show_errors
+  
   backup_file
   welcome
   basic_server_config
   recommended_api_config
   
-  # GitHub
+  # -- GitHub --
+  # Token with repo permission scope
   feedback_form_config
+  complete_github_auth
+  # Other config questions
   github_owners_list
   save_repo_owners
   if len(the_config['github issues']['allowed repository owners']) == 1:
@@ -35,6 +45,12 @@ depends on:
 code: |
   the_config['github issues']['allowed repository owners'] = allowed_github_repo_owners.splitlines()
   save_repo_owners = True
+---
+code: |
+  github_result = installer.get_validated_github_username( the_config['github issues']['token'] )
+  if type( github_result ) is str:
+    the_config['github issues']['username'] = github_result
+  complete_github_auth = True
 ---
 code: |
   the_config['github issues']['default repository owner'] = the_config['github issues']['allowed repository owners'][0]
@@ -229,18 +245,14 @@ subquestion: |
   
   The account must have permission to edit your GitHub organization's repositories. You can read [GitHub's documentation about setting an account's permissions](https://docs.github.com/en/organizations/managing-access-to-your-organizations-repositories/repository-roles-for-an-organization).
   
-  Give us the information about that account and set up its permissions.
-fields:
-  - What is the username of the account: the_config['github issues']['username']
-    default: ${ the_config['github issues'].get('username', '') }
-  - note: |
-      Now you need to authorize your docassemble server to use that account to make issues. You can do that by creating a personal access token (PAT):
+  To complete this page, you need to authorize your docassemble server to use that account to make issues. You can do that by creating a personal access token (PAT):
       
-      1. Follow [these directions to make a personal access token (PAT) for the account](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token#creating-a-token) on GitHub, stopping at the "expiration" section.
-          1. Set the expiration date to "No expiration".
-          1. Tap the checkbox for "repo" permissions.
-      1. Finish creating the personal access token.
-      1. Copy the token and paste it below
+  1. Follow [these directions to make a personal access token (PAT) for the account](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token#creating-a-token) on GitHub, stopping at the "expiration" section.
+      1. Set the expiration date to "No expiration".
+      1. Tap the checkbox for "repo" permissions.
+  1. Finish creating the personal access token.
+  1. Copy the token and paste it below
+fields:
   - Personal access token: the_config['github issues']['token']
     default: ${ the_config['github issues'].get('token', '') }
 ---
@@ -383,4 +395,33 @@ question: |
   Installation complete
 subquestion: |
   Check the status in the [Package management page](/updatepackage)
+---
+generic object: ALPackageInstaller
+event: x.show_errors
+id: error page
+question: |
+  Sorry, something went wrong
+subquestion: |
+  % for error in x.errors:
+  ##### :exclamation-circle: ${ getattr(error, error.template_name).subject }
+  
+  ${ getattr(error, error.template_name) }
+  
+  ---
+  % endfor
+---
+generic object: ErrorLikeObject
+template: x.github_credentials_error
+subject: |
+  GitHub token
+content: |
+  GitHub does not recognize the token ending in **${ the_config['github issues']['token'][-4:] }**. Are you sure you copied it correctly? If not, try deleting the token you made and make a new one.
+---
+generic object: ErrorLikeObject
+template: x.github_permissions_error
+subject: |
+  GitHub token permissions
+content: |
+  The GitHub token you gave is missing "repo" permissions. Instead, it has these permissions: **${ comma_and_list(x.scopes) }**. Make a new token that includes "repo" scope.
+---
   
