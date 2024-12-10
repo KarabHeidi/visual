@@ -1,5 +1,6 @@
 from docassemble.webapp.users.models import UserModel
 from docassemble.webapp.db_object import init_sqlalchemy
+from github import Github  # PyGithub
 # db is a SQLAlchemy Engine
 from sqlalchemy.sql import text
 from typing import List, Tuple, Dict
@@ -7,7 +8,7 @@ import docassemble.webapp.worker
 from docassemble.webapp.server import user_can_edit_package, get_master_branch, install_git_package, redirect, should_run_create, flash, url_for, restart_all
 from docassemble.base.config import daconfig
 from docassemble.webapp.backend import cloud
-from docassemble.base.util import log, DAFile
+from docassemble.base.util import log, DAFile, DAObject, DAList
 from ruamel.yaml import YAML
 from ruamel.yaml.compat import StringIO
 import re
@@ -21,7 +22,8 @@ __all__ = ['install_from_github_url',
            'get_users_and_name',
            'da_get_config',
            'da_get_config_as_file',
-           'da_write_config'
+           'da_write_config',
+           'ALPackageInstaller'
           ]
 
 def install_from_github_url(url:str, branch=""):
@@ -147,6 +149,55 @@ def speedy_get_sessions(user_id:int=None, filename:str=None)->List[Tuple]:
     sessions.append(session)
   
   return sessions
+
+
+class ALPackageInstaller(DAObject):
+    """Methods and state for installing AssemblyLine."""
+    def init( self, *pargs, **kwargs ):
+        super().init(*pargs, **kwargs)
+        self.initializeAttribute('errors', ErrorList)
+
+    def get_validated_github_username(self, access_token: str ):
+        """
+        Given a valid GitHub `access_token`, returns the username associated with it.
+        Otherwise, adds one or more errors to the installer.
+        """
+        self.errors.clear()  # Reset
+        github = Github(access_token)
+        github_user = github.get_user()
+        try:
+            # Ensure the token has the right permissions
+            scopes = github_user.raw_headers['x-oauth-scopes'].split(', ')
+            if not 'repo' in scopes and not 'public_repo' in scopes:
+                self.errors.appendObject(template_name='github_permissions_error', scopes=scopes)
+                return None
+            else:
+                return github_user.login
+        except Exception as error:
+            # GitHub doesn't recognize the token
+            # github.GithubException.BadCredentialsException (401, 403) (specific exception not working)
+            self.errors.appendObject(template_name='github_credentials_error')
+
+
+class ErrorList(DAList):
+    """Contains `ErrorLikeObject`s so they can be recognized by docassemble."""
+    def init( self, *pargs, **kwargs ):
+        super().init(*pargs, **kwargs)
+        self.object_type = ErrorLikeObject
+        self.gathered = True
+
+
+class ErrorLikeObject(DAObject):
+    """
+    An object with a `template_name` that identifieds the DALazyTemplate that will
+    show its error. It can contain any other attributes so its template can access them
+    as needed. DAObject doesn't seem to be enough to allow template definition.
+    """
+    def init( self, *pargs, **kwargs ):
+        super().init(*pargs, **kwargs)
+        # `unknown_error` can be a default template for unexpected errors to use
+        self.template_name = kwargs.get('template_name', 'unknown_error')
+
 
 #  select userdict.filename, num_keys, userdictkeys.user_id, modtime, userdict.key from userdict natural join (select key, max(modtime) as modtime, count(key) as num_keys from userdict group by key) mostrecent left join userdictkeys on userdictkeys.key = userdict.key order by modtime desc;
 # db.session.query
