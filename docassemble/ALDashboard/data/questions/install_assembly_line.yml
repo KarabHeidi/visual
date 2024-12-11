@@ -30,7 +30,7 @@ code: |
     set_default_owner_from_list
   else:
     github_owners_default
-  
+  set_answer_set_config
   menu_shortcut_config
   save_config
   selected_mandatory_packages
@@ -39,6 +39,39 @@ code: |
 ---
 code: |
   backup_file = da_get_config_as_file()
+---
+question: |
+  Do you want to enable answer sets?
+subquestion: |
+  [Answer 
+  sets](https://suffolklitlab.org/docassemble-AssemblyLine-documentation/docs/framework/answer_sets/) 
+  allow interview users to save and reuse answers in multiple interviews.
+  
+  If you do not want users to be able to re-use answers, turn off this feature.
+fields:
+  - Enable answer sets: enable_answer_sets
+    datatype: yesnoradio
+    default: True
+  - note: |
+      **Answer set imports**
+      
+      If you turn on the "answer set import" feature, users can save answers to a file and import them
+      on the same or a different server. This feature is helpful for developers but is still experimental
+      and carries some risk on production servers.
+      
+      Although there are no known specific attacks, answer set imports allow your users to create
+      arbitrary variables inside your interview. Depending on your interview design, this could have
+      unintended consequences. Therefore, this option is disabled by default.
+  - Enable answer set importing: enable_answer_set_imports
+    datatype: yesnoradio
+    default: False
+---
+code: |
+  if not "assembly line" in the_config:
+    the_config["assembly line"] = {}    
+  the_config["assembly line"]["enable answer sets"] = enable_answer_sets      
+  the_config["assembly line"]["enable answer set imports"] = enable_answer_set_imports
+  set_answer_set_config = True
 ---
 depends on:
   - allowed_github_repo_owners
