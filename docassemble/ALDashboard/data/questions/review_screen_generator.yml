@@ -55,7 +55,7 @@ code: |
   review_fields_temp = []
   for fields in questions:
     if len(fields):
-      first_label_pair = next(pair for pair in fields[0].items() if pair[0] not in not_labels)
+      first_label_pair = next((pair for pair in fields[0].items() if pair[0] not in not_labels), ("",""))
       review = {}
       review['Edit'] = first_label_pair[1] # This will be the trigger variable in edit button
       review['button'] = ""
