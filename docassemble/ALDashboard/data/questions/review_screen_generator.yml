@@ -35,37 +35,40 @@ code: |
   questions_temp = []
   for doc in yaml_parsed:  
     if doc:
+      question = {"question": doc.get('question',"").strip() }      
       fields_temp = []
       if 'fields' in doc:
         fields_temp.extend(doc.get('fields'))
       elif 'yesno' in doc:
-        fields_temp.append({doc.get('question'): doc.get('yesno'), 'datatype':'yesno'})
+        fields_temp.append({doc.get('question',""): doc.get('yesno'), 'datatype':'yesno'})
       elif 'noyes' in doc:
-        fields_temp.append({doc.get('question'): doc.get('noyes'), 'datatype':'noyes'})
+        fields_temp.append({doc.get('question',""): doc.get('noyes'), 'datatype':'noyes'})
       elif 'signature' in doc:
-        fields_temp.append({doc.get('question'): doc.get('signature'), 'datatype': 'signature'})
+        fields_temp.append({doc.get('question',""): doc.get('signature'), 'datatype': 'signature'})
       elif 'field' in doc:
         if 'choices' in doc or 'buttons' in doc:
-          fields_temp.append({doc.get('question'): doc.get('field'), 'datatype': 'radio' })
-    questions_temp.append(fields_temp)
+          fields_temp.append({doc.get('question',""): doc.get('field'), 'datatype': 'radio' })
+      question["fields"] = fields_temp
+      questions_temp.append(question)
   questions = questions_temp
   del questions_temp
 ---
 code: |
   review_fields_temp = []
-  for fields in questions:
-    if len(fields):
+  for question in questions:
+    if len(question["fields"]):
+      fields = question["fields"]
       first_label_pair = next((pair for pair in fields[0].items() if pair[0] not in not_labels), ("",""))
       review = {}
       review['Edit'] = first_label_pair[1] # This will be the trigger variable in edit button
-      review['button'] = ""
+      review["button"] = f"**{ question['question'] }**\n\n"
       for field in fields:
         label_pair = next((pair for pair in field.items() if pair[0] not in not_labels), None)
         if label_pair:
           if field.get('datatype') in ['yesno','yesnoradio','yesnowide']:
-            review['button'] += f"{label_pair[0]}: ${{ word(yesno({ label_pair[1] }))) }}\n\n"
+            review['button'] += f"{label_pair[0] or ''}: ${{ word(yesno({ label_pair[1] }))) }}\n\n"
           else:
-            review['button'] += f"{label_pair[0]}: ${{ showifdef('{label_pair[1]}') }}\n\n"
+            review['button'] += f"{label_pair[0] or ''}: ${{ showifdef('{label_pair[1]}') }}\n\n"
       review_fields_temp.append(review)
   review_yaml = {
     "id": "review screen",
