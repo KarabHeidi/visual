@@ -14,32 +14,40 @@ code: |
 question: |
   Generate a review screen
 subquestion: |
-  This interview will build you a draft of a review screen from the question.yml file.  
+  This interview will build you a draft of a review screen from the question.yml file.
+  
+  Please make sure to upload any YAML files containing questions as well as any YAML
+  files containing `objects` blocks.
 fields:
   - Upload 1 or more YAML files: yaml_file
     datatype: files
   - Create revisit screens for lists: build_revisit_blocks
     datatype: yesno
-  - Make review screens for generic questions: unwrap_generic_questions
-    datatype: yesno
+    default: True
 ---
 code: |
   import ruamel.yaml as yaml
   yaml_parsed = []
-  for file in yaml_file:
-    yaml_parsed.extend(list(yaml.safe_load_all(yaml_file.slurp())))
+  for f in yaml_file:
+    yaml_parsed.extend(list(yaml.safe_load_all(f.slurp())))
 ---
 code: |
   # identify all questions that set a variable in the interview
   # they will be added as a dictionary of label: field, with other modifiers
   
   name_match = re.compile(r"((\w+\[\d+\])|\w+)")
+  name_without_index_match = re.compile(r"(\w+).*\[i.*")
   objects_temp = []
+  attributes_list = {}
   questions_temp = []
-  for doc in yaml_parsed:  
+  generic_question_blocks = []
+  for doc in yaml_parsed:
     if doc:
       question = {"question": doc.get('question',"").strip() }
       generic_object = doc.get("generic object")
+      if generic_object:
+        generic_question_blocks.append(doc)
+        continue
       fields_temp = []
       if 'fields' in doc:
         for field in doc["fields"]:
@@ -79,6 +87,17 @@ code: |
                     {"Language": f"{ object_name }.language"},
                   ]
                   )
+          elif "[i]" in next(iter(field.values())):
+            # log(next(iter(field.values())), "success")
+            obj_match = name_without_index_match.match(next(iter(field.values())))
+            if obj_match:
+              object_name = obj_match[1]
+            else:
+              continue # Only handle [i] on the first level
+            del obj_match
+            if object_name not in attributes_list:
+              attributes_list[object_name] = []
+            attributes_list[object_name].append(field)
           else:
             fields_temp.append(field)
       elif 'yesno' in doc:
@@ -95,12 +114,38 @@ code: |
       question["fields"] = fields_temp
       if question["fields"]:
         questions_temp.append(question)
-  objects = objects_temp      
+  objects = objects_temp
   questions = questions_temp
+  del objects_temp
   del questions_temp
 ---
 code: |
   review_fields_temp = []
+  revisit_screens = []
+  tables = []
+  if build_revisit_blocks:
+    for obj in objects:
+      obj_name = next(iter(obj.keys()), [""])
+      review = {}
+      review["Edit"] = f"{ obj_name }.revisit"
+      review["button"] = f"**{ obj_name.replace('_', ' ').title() }**\n\n% for item in { obj_name }:\n- ${{ item }}\n% endfor"
+      review_fields_temp.append(review)
+      revisit_screen = {
+        "id": f"revisit { obj_name }",
+        "event": f"{ obj_name }.revisit",
+        "question": f"Edit your answers about { obj_name.replace('_', ' ').title() }",
+      }
+      revisit_screen["subquestion"] = f"${{ {obj_name}.table }}"
+      revisit_screens.append(revisit_screen)
+      if obj_name in attributes_list:
+        tables.append({
+          "table": f"{ obj_name }.table",
+          "rows": obj_name,
+          "columns": [
+            {next(iter(attribute.values())).split('.')[-1] if next(iter(attribute.keys())) == "no label" else next(iter(attribute.keys())): f"row_item.{ next(iter(attribute.values())).split('.')[-1] } if hasattr(row_item, '{next(iter(attribute.values())).split('.')[-1]}') else ''"}
+            for attribute in attributes_list[obj_name]
+          ]
+        })
   for question in questions:
     if len(question["fields"]):
       fields = question["fields"]
@@ -129,7 +174,7 @@ code: |
       "question": "Review your answers",
       'review': review_fields_temp
     },
-  ]
+  ] + revisit_screens + tables
 ---
 code: |
   not_labels = ['datatype','default', 'help', 'min','max','maxlength','minlength','rows','choices','input type','required','hint','code','exclude','none of the above','shuffle','show if','hide if','enable if','disable if','js show if','js hide if','js enable if','js disable if','disable others','note','html','field metadata','accept','validate','address autocomplete']
