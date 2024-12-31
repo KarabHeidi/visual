@@ -1,6 +1,7 @@
 ---
 include:
   - nav.yml
+  - docassemble.ALToolbox:collapse_template.yml
 ---
 imports:
   - requests
@@ -19,17 +20,18 @@ code: |
   basic_server_config
   recommended_api_config
   
-  # -- GitHub --
-  # Token with repo permission scope
-  feedback_form_config
-  complete_github_auth
-  # Other config questions
-  github_owners_list
-  save_repo_owners
-  if len(the_config['github issues']['allowed repository owners']) == 1:
-    set_default_owner_from_list
-  else:
-    github_owners_default
+  if configure_api_github:
+    # -- GitHub --
+    # Token with repo permission scope
+    feedback_form_config
+    complete_github_auth
+    # Other config questions
+    github_owners_list
+    save_repo_owners
+    if len(the_config['github issues']['allowed repository owners']) == 1:
+      set_default_owner_from_list
+    else:
+      github_owners_default
   set_answer_set_config
   menu_shortcut_config
   save_config
@@ -192,47 +194,40 @@ fields:
 id: api configuration
 continue button field: recommended_api_config
 question: |
-  Recommended API Configuration
+  Optional API Configuration
 subquestion: |
-  Below is a list of API configurations that we recommend that you make.
+  Select the API configurations that you are ready to setup now.
   
-  If you do not already have these APIs enabled, you may want to take a minute
-  to sign up for each API. You can can use this page to make it a little
-  easier to write the updated values in your configuration file.
-  
-  If you do not have the API key now, that's OK. We will add a placeholder in 
-  your configuration file that may still make it easier to edit and update
-  later.
+  ${ collapse_template(about_api_template) }
 fields:
-  - note: |
-      ---
-      We recommend setting up the following "free" / generous free
-      tier API keys:
-      
-      * Server-run API queries: [Google API for geocoding](https://developers.google.com/maps/documentation/geocoding/overview)
-        (Use an IP address restriction--this server's IP address appears to be ${ bold(requests.get('https://checkip.amazonaws.com').text.strip() or "UNKNOWN") }) (credit card required)
-      * Frontend browser API queries: [Google JavaScript API for maps](https://developers.google.com/maps/documentation/javascript/overview) / [Google places for autocompletion](https://developers.google.com/maps/documentation/places/web-service/overview)
-        (Use a referer restriction ) (credit card required)
-      * [VoiceRSS](http://www.voicerss.org/) screen reader (no credit card required)
-      
-      Please confirm that you have enabled "geocoding", "maps javascript" and "places" on
-      your Google Cloud Console account. Billing must also be turned on,
-      although you can set a quota well below the threshold that would trigger
-      any costs.
-      
-      You should also set up the following:
-      
-      * Mail (SendGrid or Mailgun have free tiers, but limited)
-      * Twilio for SMS
+  - Configure [Google API](https://console.cloud.google.com) for maps and geocoding (usually free, credit card required): configure_api_google
+    datatype: yesno
+    help: |
+      Create an API key by visiting [Google Cloud Console](https://console.cloud.google.com/). You
+      need to add a credit card, although there is a very generous free tier. Assign the API key
+      both Google Places, Geocoding, and Maps Javascript access.
   - Google API key (for geocoding, IP restrictions): the_config['google']['api key']
     default: ${ the_config['google'].get('api key') }
+    show if: configure_api_google
+    help: |
+      This API key should probably have IP address access restricted to ${ bold(requests.get('https://checkip.amazonaws.com').text.strip() or "UNKNOWN") }
   - Google Maps API key (for maps and address auto completion): the_config['google']['google maps api key']
     default: ${ the_config['google'].get('api key') }
+    show if: configure_api_google
+    help: |
+      This API key should probably have "referrer" access restricted to ${ bold(get_config("url root")) }/*
+  - Configure [VoiceRSS](https://voicerss.org) for text to speech (free, no credit card): configure_api_voicerss
+    datatype: yesno
+    help: |
+      VoiceRSS is a free service that allows readers to listen to text on-screen be read aloud.
+      It may be helpful for users with low literacy or people with limited vision that do not
+      have a screen reader. It can be turned on or off on a per-interview basis.
   - Enable VoiceRSS: the_config['voicerss']['enable']
     datatype: yesno
-    default: True
+    show if: configure_api_voicerss    
   - VoiceRSS API Key: the_config['voicerss']['key']
     default: ${ the_config['voicerss'].get('key') }    
+    show if: configure_api_voicerss
   - note: |
       % if not the_config.get('mail'):
       ** You do not appear to have a valid mail configuration.**
@@ -242,25 +237,72 @@ fields:
       
       We recommend using SendGrid, not an SMTP server.
       % endif
-  - note: |
-      ---
+  - Configure [e-filing](https://suffolklitlab.org/docassemble-AssemblyLine-documentation/docs/efiling/overview): configure_api_efile
+    datatype: yesno
+    help: |
       If you choose to use the [e-file proxy server](https://github.com/SuffolkLITLab/EfileProxyServer),
       you should also generate or [get an API token](https://github.com/SuffolkLITLab/EfileProxyServer/#making-api-tokens)
       to authenticate this server's connection.
       
-      Using the e-file connection is rare. Feel free to skip this step. 
-  - Skip efile configuration: skip_efile
-    datatype: yesno
+      Using the e-file connection is rare. Feel free to skip this step.       
   - E-file server URL: the_config['efile proxy']['url']
     default: ${ the_config['efile proxy'].get('url') or "https://efile.suffolklitlab.org:9000" }
-    hide if: skip_efile
+    show if: configure_api_efile
   - E-file proxy api key: the_config['efile proxy']['api key']
     default: ${ the_config['efile proxy'].get('api key') }
-    hide if: skip_efile
+    show if: configure_api_efile
   - E-file proxy JeffNet api key (rare): the_config['efile proxy']['jeffnet api token']
     default: ${ the_config['efile proxy'].get('jeffnet api token') }
-    hide if: skip_efile
+    show if: configure_api_efile
     required: False
+  - Configure [GitHub](https://github.com) API for showing package modification date and automating feedback (free): configure_api_github
+    datatype: yesno
+    help: |
+      The GitHub API can be used to:
+      
+      1. Display the last modified date of packages on the about screen
+      1. Add GitHub issues when users submit feedback
+  - note: |
+      **OK, you will setup GitHub on the next page.**
+    show if: configure_api_github
+  - note: |
+      **We cannot yet help you configure**:
+      
+      - [Twilio](https://docassemble.org/docs/config.html#twilio)
+      - [EMail](https://docassemble.org/docs/config.html#mail)
+---
+template: about_api_template
+subject: |
+  About optional APIs
+content: |
+  Below is a list of API configurations that we recommend that you make.
+  
+  If you do not already have these APIs enabled, you may want to take a minute
+  to sign up for each API. You can can use this page to make it a little
+  easier to write the updated values in your configuration file.
+  
+  If you do not have the API key now, that's OK. We will add a placeholder in 
+  your configuration file that may still make it easier to edit and update
+  later.
+
+  We recommend setting up the following "free" / generous free
+  tier API keys:
+
+  * Server-run API queries: [Google API for geocoding](https://developers.google.com/maps/documentation/geocoding/overview)
+    (Use an IP address restriction--this server's IP address appears to be ${ bold(requests.get('https://checkip.amazonaws.com').text.strip() or "UNKNOWN") }) (credit card required)
+  * Frontend browser API queries: [Google JavaScript API for maps](https://developers.google.com/maps/documentation/javascript/overview) / [Google places for autocompletion](https://developers.google.com/maps/documentation/places/web-service/overview)
+    (Use a referer restriction ) (credit card required)
+  * [VoiceRSS](http://www.voicerss.org/) screen reader (no credit card required)
+
+  Please confirm that you have enabled "geocoding", "maps javascript" and "places" on
+  your Google Cloud Console account. Billing must also be turned on,
+  although you can set a quota well below the threshold that would trigger
+  any costs.
+
+  You should also set up the following:
+
+  * Mail (SendGrid or Mailgun have free tiers, but limited)
+  * Twilio for SMS  
 ---
 # This must be tested with a private repository
 #  If your GitHub organization's repositories are private, the account must have permission to see it and file issues.
