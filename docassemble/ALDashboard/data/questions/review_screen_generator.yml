@@ -5,14 +5,6 @@ metadata:
 ---
 include:
   - nav.yml
-#---
-#modules:
-#  - ruamel.yaml
-#---
-#code: yaml = ruamel.yaml
-#---
-#modules:
-#  - docassemble.assemblylinewizard.interview_generator
 ---
 mandatory: True
 code: |
@@ -20,25 +12,94 @@ code: |
   results
 ---
 question: |
-  Upload a yaml file
+  Generate a review screen
+subquestion: |
+  This interview will build you a draft of a review screen from the question.yml file.
+  
+  Please make sure to upload any YAML files containing questions as well as any YAML
+  files containing `objects` blocks.
 fields:
-  - Yaml file: yaml_file
-    datatype: file
+  - Upload 1 or more YAML files: yaml_file
+    datatype: files
+  - Create revisit screens for lists: build_revisit_blocks
+    datatype: yesno
+    default: True
 ---
 code: |
   import ruamel.yaml as yaml
-  yaml_parsed = list(yaml.safe_load_all(yaml_file.slurp()))
+  yaml_parsed = []
+  for f in yaml_file:
+    yaml_parsed.extend(list(yaml.safe_load_all(f.slurp())))
 ---
 code: |
   # identify all questions that set a variable in the interview
   # they will be added as a dictionary of label: field, with other modifiers
+  
+  name_match = re.compile(r"((\w+\[\d+\])|\w+)")
+  name_without_index_match = re.compile(r"(\w+).*\[i.*")
+  objects_temp = []
+  attributes_list = {}
   questions_temp = []
-  for doc in yaml_parsed:  
+  generic_question_blocks = []
+  for doc in yaml_parsed:
     if doc:
-      question = {"question": doc.get('question',"").strip() }      
+      question = {"question": doc.get('question',"").strip() }
+      generic_object = doc.get("generic object")
+      if generic_object:
+        generic_question_blocks.append(doc)
+        continue
       fields_temp = []
       if 'fields' in doc:
-        fields_temp.extend(doc.get('fields'))
+        for field in doc["fields"]:
+          if field and "code" in field:
+            object_name = name_match.match(field["code"])[1]
+            if object_name == "x" or "[i]" in field["code"]:
+              continue
+            else:
+              if ".name_fields(" in field["code"]:
+                fields_temp.extend(
+                  [
+                    {"First": f"{ object_name }.name.first"},
+                    {"Middle": f"{ object_name }.name.middle"},
+                    {"Last": f"{ object_name }.name.last"},
+                  ]
+                  )
+              elif ".address_fields(" in field["code"]:
+                fields_temp.extend(
+                  [
+                    {"Address": f"{ object_name }.address.address"},
+                    {"Apartment or Unit": f"{ object_name }.address.unit"},
+                    {"City": f"{ object_name }.address.city"},
+                    {"State": f"{ object_name }.address.state"},
+                    {"Zip": f"{ object_name }.address.zip"},
+                    {"Country": f"{ object_name }.address.country"},
+                  ]
+                  )
+              elif ".gender_fields(" in field["code"]:
+                fields_temp.extend(
+                  [
+                    {"Gender": f"{ object_name }.gender"},
+                  ]
+                  )
+              elif ".language_fields(" in field["code"]:
+                fields_temp.extend(
+                  [
+                    {"Language": f"{ object_name }.language"},
+                  ]
+                  )
+          elif "[i]" in next(iter(field.values())):
+            # log(next(iter(field.values())), "success")
+            obj_match = name_without_index_match.match(next(iter(field.values())))
+            if obj_match:
+              object_name = obj_match[1]
+            else:
+              continue # Only handle [i] on the first level
+            del obj_match
+            if object_name not in attributes_list:
+              attributes_list[object_name] = []
+            attributes_list[object_name].append(field)
+          else:
+            fields_temp.append(field)
       elif 'yesno' in doc:
         fields_temp.append({doc.get('question',""): doc.get('yesno'), 'datatype':'yesno'})
       elif 'noyes' in doc:
@@ -48,13 +109,43 @@ code: |
       elif 'field' in doc:
         if 'choices' in doc or 'buttons' in doc:
           fields_temp.append({doc.get('question',""): doc.get('field'), 'datatype': 'radio' })
+      elif 'objects' in doc:
+        objects_temp.extend(doc["objects"])
       question["fields"] = fields_temp
-      questions_temp.append(question)
+      if question["fields"]:
+        questions_temp.append(question)
+  objects = objects_temp
   questions = questions_temp
+  del objects_temp
   del questions_temp
 ---
 code: |
   review_fields_temp = []
+  revisit_screens = []
+  tables = []
+  if build_revisit_blocks:
+    for obj in objects:
+      obj_name = next(iter(obj.keys()), [""])
+      review = {}
+      review["Edit"] = f"{ obj_name }.revisit"
+      review["button"] = f"**{ obj_name.replace('_', ' ').title() }**\n\n% for item in { obj_name }:\n- ${{ item }}\n% endfor"
+      review_fields_temp.append(review)
+      revisit_screen = {
+        "id": f"revisit { obj_name }",
+        "event": f"{ obj_name }.revisit",
+        "question": f"Edit your answers about { obj_name.replace('_', ' ').title() }",
+      }
+      revisit_screen["subquestion"] = f"${{ {obj_name}.table }}"
+      revisit_screens.append(revisit_screen)
+      if obj_name in attributes_list:
+        tables.append({
+          "table": f"{ obj_name }.table",
+          "rows": obj_name,
+          "columns": [
+            {next(iter(attribute.values())).split('.')[-1] if next(iter(attribute.keys())) == "no label" else next(iter(attribute.keys())): f"row_item.{ next(iter(attribute.values())).split('.')[-1] } if hasattr(row_item, '{next(iter(attribute.values())).split('.')[-1]}') else ''"}
+            for attribute in attributes_list[obj_name]
+          ]
+        })
   for question in questions:
     if len(question["fields"]):
       fields = question["fields"]
@@ -65,17 +156,25 @@ code: |
       for field in fields:
         label_pair = next((pair for pair in field.items() if pair[0] not in not_labels), None)
         if label_pair:
-          if field.get('datatype') in ['yesno','yesnoradio','yesnowide']:
-            review['button'] += f"{label_pair[0] or ''}: ${{ word(yesno({ label_pair[1] })) }}\n\n"
-          else:
-            review['button'] += f"{label_pair[0] or ''}: ${{ showifdef('{label_pair[1]}') }}\n\n"
+          if label_pair[0] == "no label":
+            if field.get('datatype') in ['yesno','yesnoradio','yesnowide']:
+              review['button'] += f"${{ word(yesno({ label_pair[1] })) }}\n\n"
+            else:
+              review['button'] += f"${{ showifdef('{label_pair[1]}') }}\n\n"
+          else:          
+            if field.get('datatype') in ['yesno','yesnoradio','yesnowide']:
+              review['button'] += f"{label_pair[0] or ''}: ${{ word(yesno({ label_pair[1] })) }}\n\n"
+            else:
+              review['button'] += f"{label_pair[0] or ''}: ${{ showifdef('{label_pair[1]}') }}\n\n"
       review["button"] = review["button"].strip() + "\n"
       review_fields_temp.append(review)
-  review_yaml = {
-    "id": "review screen",
-    "question": "Review your answers",
-    'review': review_fields_temp
-    }
+  review_yaml = [
+    {
+      "id": "review screen",
+      "question": "Review your answers",
+      'review': review_fields_temp
+    },
+  ] + revisit_screens + tables
 ---
 code: |
   not_labels = ['datatype','default', 'help', 'min','max','maxlength','minlength','rows','choices','input type','required','hint','code','exclude','none of the above','shuffle','show if','hide if','enable if','disable if','js show if','js hide if','js enable if','js disable if','disable others','note','html','field metadata','accept','validate','address autocomplete']
@@ -83,8 +182,8 @@ code: |
 code: |
   # import pyyaml
   # from yaml import dump
-  from pyaml import dump
-  review_yaml_dumped = dump(review_yaml, string_val_style='|')
+  from pyaml import dump_all
+  review_yaml_dumped = dump_all(review_yaml, string_val_style='|')
 ---
 event: results
 question: |
