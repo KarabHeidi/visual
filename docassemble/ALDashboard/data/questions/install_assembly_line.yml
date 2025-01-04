@@ -33,6 +33,7 @@ code: |
     else:
       github_owners_default
   set_answer_set_config
+  set_custom_interview_list
   menu_shortcut_config
   save_config
   selected_mandatory_packages
@@ -68,12 +69,50 @@ fields:
     datatype: yesnoradio
     default: False
 ---
+question: |
+  Use a custom interview list page?
+subquestion: |
+  You can use a [custom interview list](https://suffolklitlab.org/docassemble-AssemblyLine-documentation/docs/framework/magic_variables#use-the-assemblyline-interview-list-replacement)
+  to replace Docassemble's stock "My interviews" page.
+
+  The replacement page has been expert-tested to improve usability. It is also
+  faster than the default page and can display the progress a user has made in each
+  interview session.
+fields:
+  - Use custom interview list page: enable_custom_interview_list
+    datatype: yesnoradio
+  - What URL should the "Start a new form" link point to?: custom_interview_list_start_page
+    default: https://courtformsonline.org
+    help: |
+      Add a link to a page that lists all of the interviews that you have available.
+      If you do not have a custom landing page, you might want to just use "/list".
+    show if: enable_custom_interview_list
+  - Update session to include progress and user name automatically: enable_session_metadata_update
+    datatype: yesnoradio
+    help: |
+      Select "yes" if you want the party names and the progress of each interview displayed
+      on the custom interview list.
+
+      This feature is recommended, but does add a small database query every 3 screen loads.
+      You can turn it off later if you like.
+    default: True
+    show if: enable_custom_interview_list
+---
 code: |
   if not "assembly line" in the_config:
     the_config["assembly line"] = {}    
   the_config["assembly line"]["enable answer sets"] = enable_answer_sets      
   the_config["assembly line"]["enable answer set imports"] = enable_answer_set_imports
   set_answer_set_config = True
+---
+code: |
+  if not "assembly line" in the_config:
+    the_config["assembly line"] = {}    
+  if enable_custom_interview_list:
+    the_config["assembly line"]["update session metadata"] = enable_session_metadata_update
+    the_config["assembly line"]["new form url"] = custom_interview_list_start_page
+    the_config["session list interview"] = "docassemble.AssemblyLine:data/questions/interview_list.yml"
+  set_custom_interview_list = True
 ---
 depends on:
   - allowed_github_repo_owners
