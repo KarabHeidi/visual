@@ -38,6 +38,7 @@ __all__ = [
     "da_write_config",
     "ALPackageInstaller",
     "get_package_info",
+    "install_from_pypi",
 ]
 
 

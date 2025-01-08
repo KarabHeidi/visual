@@ -17,7 +17,7 @@ objects:
   - packages: DAList.using(object_type=DAObject, there_are_any=True, complete_attribute="package_name")
 ---
 code: |
-  installed_packages = get_package_info(exclude_core=True)
+  installed_packages = get_package_info()
 ---
 mandatory: True
 id: interview order
@@ -50,7 +50,7 @@ code: |
 ---
 event: install_packages_event
 code: |
-  for package in installed_packages:
+  for package in installed_packages[0]:
     if package.package.name in packages.true_values():
       if package.package.type and package.package.type == "git":
         install_from_github_url(package.package.giturl)
