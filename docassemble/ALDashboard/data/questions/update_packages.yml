@@ -2,6 +2,9 @@
 include:
   - nav.yml
 ---
+modules:
+  - .aldashboard  
+---
 metadata:
   title: Bulk Package Update
   sessions are unique: True
@@ -11,40 +14,19 @@ metadata:
   temporary session: True
 ---
 objects:
-  - daREST: DAWeb.using(base_url=get_config('url root',"https://" + get_config('external hostname',"")) + "/api" )
   - packages: DAList.using(object_type=DAObject, there_are_any=True, complete_attribute="package_name")
 ---
 code: |
-  installed_packages = daREST.get('package',{"key": install_packages_api_key })
----
-code: |
-  install_packages_api_key = get_config('install packages api key')
+  installed_packages = get_package_info(exclude_core=True)
 ---
 mandatory: True
 id: interview order
 code: |
-  if not install_packages_api_key:
-    exit_no_api_key
   packages.gather()
   if install_packages_task.ready():
     ending_screen
   else:
     waiting_screen
----
-event: exit_no_api_key
-question: |
-  Please add an API key!
-subquestion: |
-  This interview requires an API key to work.
-  
-  You can create an API key by going to your profile. Please
-  create an API key with either IP restrictions or no restrictions.
-  
-  Then add it to the [configuration file](${ url_of('config') }) like this:
-  
-  ```
-  install packages api key: x7123aG...
-  ```
 ---
 question: |
   What packages do you want to update?
@@ -53,19 +35,27 @@ fields:
     required: False
     datatype: checkboxes
     code: |
-      [[package.get('name'),f"{package.get('name','')} ({package.get('version')})",True] for package in installed_packages if 'docassemble.' in package.get('name') and package.get('name') not in ['docassemble.demo','docassemble.webapp','docassemble.base']]
+      [
+        package.package.name
+        for package in installed_packages[0]
+        if (
+          package.package.name.startswith("docassemble")
+          and package.can_update
+          and package.package.name not in ["docassemble", "docassemble-backports", "docassemble.webapp", "docassemble-textstat", "docassemblekvsession"]
+        )
+      ]
 ---
 code: |
   install_packages_task = background_action('install_packages_event')
 ---
 event: install_packages_event
 code: |
-  for package in packages:
-    data = {"key": install_packages_api_key,
-            "update": package
-            }
-    # This won't persist after backround task completes
-    package.status = daREST.post("package",data=data)
+  for package in installed_packages:
+    if package.package.name in packages.true_values():
+      if package.package.type and package.package.type == "git":
+        install_from_github_url(package.package.giturl)
+      elif package.package.type and package.package.type == "pip":
+        install_from_pypi(package.package.name)
   background_response()
 ---  
 event: waiting_screen
