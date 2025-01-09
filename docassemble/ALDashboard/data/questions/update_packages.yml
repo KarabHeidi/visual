@@ -53,18 +53,22 @@ code: |
   for package in installed_packages[0]:
     if package.package.name in packages.true_values():
       if package.package.type and package.package.type == "git":
-        install_from_github_url(package.package.giturl)
+        pkgname = install_from_github_url(package.package.giturl)
+        reset(pkgname)
       elif package.package.type and package.package.type == "pip":
         install_from_pypi(package.package.name)
   background_response()
 ---  
 event: waiting_screen
 question: |
-  Wait here
+  Wait here while we start installing packages
 reload: True
 ---
 event: ending_screen
 question: |
-  All done
+  Your packages are installing
+subquestion: |
+  Check the log file to monitor progress. It may still take a few more minutes
+  for the installation process to complete.
 buttons:
   - Restart: restart
