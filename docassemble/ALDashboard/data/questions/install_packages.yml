@@ -6,6 +6,9 @@ metadata:
     - developer
   temporary session: True
 ---
+modules:
+  - .aldashboard
+---
 objects:
   - packages: DAList.using(object_type=DAObject, there_are_any=True, complete_attribute="github_url")
 ---
@@ -33,17 +36,11 @@ code: |
 ---
 event: install_packages_event
 code: |
+  background_error_action("bg_failure")
   for package in packages:
     pkgname = install_from_github_url(package.github_url)
-    reset(pkgname)  
-  background_response()
----  
-event: waiting_screen
-question: |
-  Wait here while we start the installation process
-reload: True  
----
-code: |
+    reset(pkgname)
+
   the_config = da_get_config()
   if not the_config.get("dispatch"):
     the_config["dispatch"] = {}
@@ -52,14 +49,31 @@ code: |
       match = re.search(package_regex, package.github_url)
       if match:
         package_path = f"docassemble.{ match.groups()[0] }:data/questions/{ package.yaml_name }"
-        the_config[package.alias] = package_path
+        the_config["dispatch"][package.alias] = package_path
   results = da_write_config(the_config)
-  update_config = True
+
+  background_response_action("bg_success")
+---
+event: bg_success
+code: |
+  it_worked = True
+  background_response()
+---  
+event: waiting_screen
+question: |
+  Wait here while we start the installation process
+reload: True
+---
+event: bg_failure
+code: |
+  it_worked = False
+  background_response()
 ---
 event: ending_screen
 question: |
   All done
 subquestion: |
+  % if it_worked:
   It may take a few minutes for the installation process to complete.
 
   You can now use these links to reach your interviews:
@@ -67,5 +81,8 @@ subquestion: |
   % for package in packages:
   * [${package.alias}](/start/${package.alias})
   % endfor
+  % else:
+  Something went wrong. Check the [worker.log](/logs?file=worker.log) to learn what.
+  % endif
 buttons:
   - Restart: restart
