@@ -50,6 +50,7 @@ code: |
 ---
 event: install_packages_event
 code: |
+  background_error_action("bg_failure")
   for package in installed_packages[0]:
     if package.package.name in packages.true_values():
       if package.package.type and package.package.type == "git":
@@ -57,18 +58,32 @@ code: |
         reset(pkgname)
       elif package.package.type and package.package.type == "pip":
         install_from_pypi(package.package.name)
+  background_response_action("bg_success")
+---
+event: bg_success
+code: |
+  it_worked = True
   background_response()
 ---  
 event: waiting_screen
 question: |
-  Wait here while we start installing packages
+  Wait here while we start the installation process
 reload: True
+---
+event: bg_failure
+code: |
+  it_worked = False
+  background_response()
 ---
 event: ending_screen
 question: |
   Your packages are installing
 subquestion: |
+  % if it_worked:
   Check the log file to monitor progress. It may still take a few more minutes
   for the installation process to complete.
+  % else:
+  Something went wrong. Check the [worker.log](/logs?file=worker.log) to learn what.
+  % endif
 buttons:
   - Restart: restart
