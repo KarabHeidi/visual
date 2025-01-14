@@ -6,38 +6,20 @@ metadata:
     - developer
   temporary session: True
 ---
-objects:
-  - daREST: DAWeb.using(base_url=get_config('url root',"https://" + get_config('external hostname',"")) + "/api" )
-  - packages: DAList.using(object_type=DAObject, there_are_any=True, complete_attribute="github_url")
+modules:
+  - .aldashboard
 ---
-code: |
-  install_packages_api_key = get_config('install packages api key')
+objects:
+  - packages: DAList.using(object_type=DAObject, there_are_any=True, complete_attribute="github_url")
 ---
 mandatory: True
 id: interview order
 code: |
-  if not install_packages_api_key:
-    exit_no_api_key
   packages.gather()
   if install_packages_task.ready():
     ending_screen
   else:
     waiting_screen
----
-event: exit_no_api_key
-question: |
-  Please add an API key!
-subquestion: |
-  This interview requires an API key to work.
-  
-  You can create an API key by going to your profile. Please
-  create an API key with either IP restrictions or no restrictions.
-  
-  Then add it to the [configuration file](${ url_of('config') }) like this:
-  
-  ```
-  install packages api key: x7123aG...
-  ```
 ---
 question: |
   What packages do you want to install?
@@ -46,57 +28,61 @@ fields:
   - Github URL: packages[i].github_url
   - YAML filename: packages[i].yaml_name
   - Short name or alias (no spaces): packages[i].alias
+    validate: |
+      lambda y: y.isidentifier()
 ---
 code: |
   install_packages_task = background_action('install_packages_event')
 ---
 event: install_packages_event
 code: |
+  background_error_action("bg_failure")
   for package in packages:
-    data = {"key": install_packages_api_key,
-            "github_url": package.github_url
-            }
-    # This won't persist after backround task completes
-    package.status = daREST.post("package",data=data)
+    pkgname = install_from_github_url(package.github_url)
+    reset(pkgname)
+
+  the_config = da_get_config()
+  if not the_config.get("dispatch"):
+    the_config["dispatch"] = {}
+  for package in packages:
+      package_regex = r"https:\/\/github\.com\/.*\/docassemble-([\w]*)"
+      match = re.search(package_regex, package.github_url)
+      if match:
+        package_path = f"docassemble.{ match.groups()[0] }:data/questions/{ package.yaml_name }"
+        the_config["dispatch"][package.alias] = package_path
+  results = da_write_config(the_config)
+
+  background_response_action("bg_success")
+---
+event: bg_success
+code: |
+  it_worked = True
   background_response()
 ---  
 event: waiting_screen
 question: |
-  Wait here
-reload: True  
+  Wait here while we start the installation process
+reload: True
 ---
+event: bg_failure
 code: |
-  dispatch_temp = ""
-  for package in packages:
-    package_regex = r"https:\/\/github\.com\/.*\/docassemble-([\w]*)"
-    match = re.search(package_regex, package.github_url)
-    if match:
-      dispatch_temp += '  "' + package.alias + '": '  
-      package_name = "docassemble." + match.groups()[0]
-      dispatch_temp += '"' + package_name + ':data/questions/' + package.yaml_name + '"'
-      dispatch_temp += "\n"
-  dispatch_directive = dispatch_temp
-  del dispatch_temp
-  del match
+  it_worked = False
+  background_response()
 ---
 event: ending_screen
 question: |
   All done
 subquestion: |
-  Copy the dispatch directive below into the right place in the 
-  configuration file.
+  % if it_worked:
+  It may take a few minutes for the installation process to complete.
+
+  You can now use these links to reach your interviews:
   
-  
-  ${ indent(dispatch_directive) }
-  
-  
-  IOnce you install the dispatch directive, you can use these
-  links to reach your interviews:
-  
-  Alias | Link
-  ------|--------
   % for package in packages:
-  ${ package.alias } | [${package.alias}](/start/${package.alias})
+  * [${package.alias}](/start/${package.alias})
   % endfor
+  % else:
+  Something went wrong. Check the [worker.log](/logs?file=worker.log) to learn what.
+  % endif
 buttons:
   - Restart: restart
