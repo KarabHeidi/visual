@@ -1,7 +1,6 @@
 ---
 include:
   - nav.yml
-  - docassemble.ALToolbox:collapse_template.yml
 ---
 imports:
   - requests
@@ -237,7 +236,66 @@ question: |
 subquestion: |
   Select the API configurations that you are ready to setup now.
   
-  ${ collapse_template(about_api_template) }
+  <div class="accordion" id="about-apis">
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="headingOne">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+          About optional APIs
+        </button>
+      </h2>
+      <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#about-apis">
+        <div class="accordion-body">
+  <p>        
+  Below is a list of API configurations that we recommend that you make.
+  </p>
+  <p>
+  If you do not already have these APIs enabled, you may want to take a minute
+  to sign up for each API. You can can use this page to make it a little
+  easier to write the updated values in your configuration file.
+  </p>
+  <p>
+  If you do not have the API key now, that's OK. We will add a placeholder in 
+  your configuration file that may still make it easier to edit and update
+  later.
+  </p>
+  <p>
+  We recommend setting up the following "free" / generous free
+  tier API keys:
+  <ul>
+  <li> Server-run API queries: <a href="https://developers.google.com/maps/documentation/geocoding/overview">Google API for geocoding</a>
+    (Use an IP address restriction--this server's IP address appears to be <b> ${ requests.get('https://checkip.amazonaws.com').text.strip() or "UNKNOWN" }</b> (credit card required)
+  </li>
+  <li>
+  Frontend browser API queries: <a href="https://developers.google.com/maps/documentation/javascript/overview">Google JavaScript API for maps</a> / <a href="https://developers.google.com/maps/documentation/places/web-service/overview">Google places for autocompletion</a>
+    (Use a referer restriction ) (credit card required)
+  </li>
+  <li>
+  <a href="http://www.voicerss.org/">VoiceRSS</a> screen reader (no credit card required)
+  </li>
+  </ul>
+  </p>
+  <p>
+  Please confirm that you have enabled "geocoding", "maps javascript" and "places" on
+  your Google Cloud Console account. Billing must also be turned on,
+  although you can set a quota well below the threshold that would trigger
+  any costs.
+  </p>
+  <p>
+  You should also set up the following:
+  </p>
+  <ul>
+  <li>
+  Mail (SendGrid or Mailgun have free tiers, but limited)
+  </li>
+  <li>
+  Twilio for SMS
+  </li>
+  </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
 fields:
   - Configure [Google API](https://console.cloud.google.com) for maps and geocoding (usually free, credit card required): configure_api_google
     datatype: yesno
@@ -309,39 +367,6 @@ fields:
       
       - [Twilio](https://docassemble.org/docs/config.html#twilio)
       - [EMail](https://docassemble.org/docs/config.html#mail)
----
-template: about_api_template
-subject: |
-  About optional APIs
-content: |
-  Below is a list of API configurations that we recommend that you make.
-  
-  If you do not already have these APIs enabled, you may want to take a minute
-  to sign up for each API. You can can use this page to make it a little
-  easier to write the updated values in your configuration file.
-  
-  If you do not have the API key now, that's OK. We will add a placeholder in 
-  your configuration file that may still make it easier to edit and update
-  later.
-
-  We recommend setting up the following "free" / generous free
-  tier API keys:
-
-  * Server-run API queries: [Google API for geocoding](https://developers.google.com/maps/documentation/geocoding/overview)
-    (Use an IP address restriction--this server's IP address appears to be ${ bold(requests.get('https://checkip.amazonaws.com').text.strip() or "UNKNOWN") }) (credit card required)
-  * Frontend browser API queries: [Google JavaScript API for maps](https://developers.google.com/maps/documentation/javascript/overview) / [Google places for autocompletion](https://developers.google.com/maps/documentation/places/web-service/overview)
-    (Use a referer restriction ) (credit card required)
-  * [VoiceRSS](http://www.voicerss.org/) screen reader (no credit card required)
-
-  Please confirm that you have enabled "geocoding", "maps javascript" and "places" on
-  your Google Cloud Console account. Billing must also be turned on,
-  although you can set a quota well below the threshold that would trigger
-  any costs.
-
-  You should also set up the following:
-
-  * Mail (SendGrid or Mailgun have free tiers, but limited)
-  * Twilio for SMS  
 ---
 # This must be tested with a private repository
 #  If your GitHub organization's repositories are private, the account must have permission to see it and file issues.
