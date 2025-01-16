@@ -1,7 +1,6 @@
 ---
 include:
   - nav.yml
-  - docassemble.ALToolbox:collapse_template.yml
 ---
 imports:
   - requests
@@ -237,7 +236,21 @@ question: |
 subquestion: |
   Select the API configurations that you are ready to setup now.
   
-  ${ collapse_template(about_api_template) }
+  <div class="accordion" id="about-apis">
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="headingOne">
+        <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+          ${ about_api_template.subject_as_html() }
+        </button>
+      </h2>
+      <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#about-apis">
+        <div class="accordion-body">
+          ${ about_api_template.content_as_html() }
+        </div>
+      </div>
+    </div>
+  </div>
+
 fields:
   - Configure [Google API](https://console.cloud.google.com) for maps and geocoding (usually free, credit card required): configure_api_google
     datatype: yesno
@@ -315,11 +328,11 @@ subject: |
   About optional APIs
 content: |
   Below is a list of API configurations that we recommend that you make.
-  
+
   If you do not already have these APIs enabled, you may want to take a minute
   to sign up for each API. You can can use this page to make it a little
   easier to write the updated values in your configuration file.
-  
+
   If you do not have the API key now, that's OK. We will add a placeholder in 
   your configuration file that may still make it easier to edit and update
   later.
@@ -341,7 +354,7 @@ content: |
   You should also set up the following:
 
   * Mail (SendGrid or Mailgun have free tiers, but limited)
-  * Twilio for SMS  
+  * Twilio for SMS
 ---
 # This must be tested with a private repository
 #  If your GitHub organization's repositories are private, the account must have permission to see it and file issues.
