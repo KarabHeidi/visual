@@ -1,0 +1,45 @@
+---
+include:
+  - nav.yml
+---
+modules:
+  - .translation
+---
+metadata:
+  title: |
+    Translation support tool    
+---
+code: |
+  translations = [
+    translation_file(the_yaml_path, tr_lang)
+    for tr_lang
+    in tr_langs.split()
+  ]
+---
+question: |
+  What file do you want to translate?
+fields:
+  - "YAML file path (like: docassemble.AssemblyLine:assembly_line.yml)": the_yaml_path
+    datatype: combobox
+    code: |
+      [
+        {form["filename"]: form["title"] }
+        for form in interview_menu()
+      ]
+  - "Language codes (like: es, one per line)": tr_langs
+    datatype: area
+---
+mandatory: True
+question: |
+  Translation results
+subquestion: |
+  % for index, tr_lang in enumerate(tr_langs.split()):
+  ## ${ tr_lang }
+  ${ translations[index].file }
+
+  Number of words to translate: ${ translations[index].untranslated_words }
+
+  Number of untranslated rows: ${ translations[index].untranslated_segments }
+
+  Percentage of rows that are not translated: %${ translations[index].untranslated_segments/translations[index].total_rows * 100 }
+  % endfor

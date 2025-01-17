@@ -43,10 +43,16 @@ from docassemble.webapp.server import mako_parts
 from typing import NamedTuple
 DEFAULT_LANGUAGE = "en"
 
+__all__ = [
+    "Translation",
+    "translation_file",
+]
+
 class Translation(NamedTuple):
     file: DAFile # an XLSX or XLIFF file
-    untranslated_words: int # Word count for all untranslated segments
+    untranslated_words: int # Word count for all untranslated segments that are not Mako or HTML
     untranslated_segments: int # Number of rows in the output that have untranslated text - one for each question, subquestion, field, etc.
+    total_rows: int
 
 def translation_file(yaml_filename:str, tr_lang:str, filetype:str = "XLSX") -> Translation:
     """
@@ -270,6 +276,9 @@ def translation_file(yaml_filename:str, tr_lang:str, filetype:str = "XLSX") -> T
         worksheet.set_column(6, 7, 75)
         row = 1
         seen = []
+        untranslated_segments = 0
+        untranslated_text = ""
+        total_rows = 0
         for question in interview.all_questions:
             if not hasattr(question, 'translations'):
                 continue
@@ -288,10 +297,13 @@ def translation_file(yaml_filename:str, tr_lang:str, filetype:str = "XLSX") -> T
             for item in question.translations:
                 if item in seen:
                     continue
+                total_rows += 1
+                # The segment has already been translated and the translation is still valid
                 if item in tr_cache and language in tr_cache[item] and tr_lang in tr_cache[item][language]:
                     tr_text = str(tr_cache[item][language][tr_lang]['tr_text'])
-                else:
+                else: # This string needs to be translated
                     tr_text = ''
+                    untranslated_segments += 1
                 worksheet.write_string(row, 0, question.from_source.get_name(), text)
                 worksheet.write_string(row, 1, question_id, text)
                 worksheet.write_number(row, 2, indexno, numb)
@@ -299,7 +311,11 @@ def translation_file(yaml_filename:str, tr_lang:str, filetype:str = "XLSX") -> T
                 worksheet.write_string(row, 4, language, text)
                 worksheet.write_string(row, 5, tr_lang, text)
                 mako = mako_parts(item)
-                if len(mako) == 0:
+                for phrase in mako:
+                    if phrase[1] == 0:
+                        untranslated_text += phrase[0]
+
+                if len(mako) == 0: # Can this case occur? Not in tests
                     worksheet.write_string(row, 6, '', wholefixed)
                 elif len(mako) == 1:
                     if mako[0][1] == 0:
@@ -400,7 +416,8 @@ def translation_file(yaml_filename:str, tr_lang:str, filetype:str = "XLSX") -> T
                 worksheet.set_row(row, 15*(num_lines + 1))
             row += 1
         workbook.close()
-        return Translation(output_file, 0,0)
+        untranslated_words = len(re.findall(r"\w+", untranslated_text))        
+        return Translation(output_file, untranslated_words,untranslated_segments, total_rows)
     if filetype.startswith('XLIFF'):
         seen = set()
         translations = {}
