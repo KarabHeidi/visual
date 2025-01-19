@@ -54,13 +54,17 @@ class Translation(NamedTuple):
     untranslated_segments: int # Number of rows in the output that have untranslated text - one for each question, subquestion, field, etc.
     total_rows: int
 
-def translation_file(yaml_filename:str, tr_lang:str, filetype:str = "XLSX") -> Translation:
+def translation_file(yaml_filename:str, tr_lang:str ) -> Translation:
     """
-    Return a tuple of the translation file in XLSX or XLIFF format, plus a count of the 
+    Return a tuple of the translation file in XLSX format, plus a count of the 
     number of words and segments that need to be translated.
 
     The word and segment count only apply when filetype="XLSX".
+
+    This code was adjusted from the Flask endpoint-only version in server.py. XLIFF support was removed
+    for now but can be added later.
     """
+    filetype:str = "XLSX" # Look in server.py for support of XLIFF format, but we won't implement it here
     output_file = DAFile()
     setup_translation()
     if yaml_filename is None or not re.search(r'\S', yaml_filename):
@@ -183,7 +187,6 @@ def translation_file(yaml_filename:str, tr_lang:str, filetype:str = "XLSX") -> T
                                 tr_cache[orig_text][source_lang][target_lang] = the_dict
                                 indexno += 1
     if filetype == 'XLSX':        
-        # temp_file = tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False)
         xlsx_filename = docassemble.base.functions.space_to_underscore(os.path.splitext(os.path.basename(re.sub(r'.*:', '', yaml_filename)))[0]) + "_" + tr_lang + ".xlsx"
         output_file.initialize(filename=xlsx_filename)
         workbook = xlsxwriter.Workbook(output_file.path())
@@ -251,24 +254,7 @@ def translation_file(yaml_filename:str, tr_lang:str, filetype:str = "XLSX") -> T
         worksheet.write('F1', 'tr_lang', bold)
         worksheet.write('G1', 'orig_text', bold)
         worksheet.write('H1', 'tr_text', bold)
-        # options = {
-        #     'objects':               False,
-        #     'scenarios':             False,
-        #     'format_cells':          False,
-        #     'format_columns':        False,
-        #     'format_rows':           False,
-        #     'insert_columns':        False,
-        #     'insert_rows':           True,
-        #     'insert_hyperlinks':     False,
-        #     'delete_columns':        False,
-        #     'delete_rows':           True,
-        #     'select_locked_cells':   True,
-        #     'sort':                  True,
-        #     'autofilter':            True,
-        #     'pivot_tables':          False,
-        #     'select_unlocked_cells': True,
-        # }
-        # worksheet.protect('', options)
+
         worksheet.set_column(0, 0, 25)
         worksheet.set_column(1, 1, 15)
         worksheet.set_column(2, 2, 12)
@@ -418,190 +404,4 @@ def translation_file(yaml_filename:str, tr_lang:str, filetype:str = "XLSX") -> T
         workbook.close()
         untranslated_words = len(re.findall(r"\w+", untranslated_text))        
         return Translation(output_file, untranslated_words,untranslated_segments, total_rows)
-    if filetype.startswith('XLIFF'):
-        seen = set()
-        translations = {}
-        xliff_files = []
-        if filetype == 'XLIFF 1.2':
-            for question in interview.all_questions:
-                if not hasattr(question, 'translations'):
-                    continue
-                language = question.language
-                if language == '*':
-                    language = interview_source.language
-                if language == '*':
-                    language = DEFAULT_LANGUAGE
-                if language == tr_lang:
-                    continue
-                question_id = question.name
-                lang_combo = (language, tr_lang)
-                if lang_combo not in translations:
-                    translations[lang_combo] = []
-                for item in question.translations:
-                    if item in seen:
-                        continue
-                    if item in tr_cache and language in tr_cache[item] and tr_lang in tr_cache[item][language]:
-                        tr_text = str(tr_cache[item][language][tr_lang]['tr_text'])
-                    else:
-                        tr_text = ''
-                    orig_mako = mako_parts(item)
-                    tr_mako = mako_parts(tr_text)
-                    translations[lang_combo].append([orig_mako, tr_mako])
-                    seen.add(item)
-            for lang_combo, translation_list in translations.items():
-                temp_file = tempfile.NamedTemporaryFile(suffix='.xlf', delete=False)
-                if len(translations) > 1:
-                    xlf_filename = docassemble.base.functions.space_to_underscore(os.path.splitext(os.path.basename(re.sub(r'.*:', '', yaml_filename)))[0]) + "_" + lang_combo[0] + "_" + lang_combo[1] + ".xlf"
-                else:
-                    xlf_filename = docassemble.base.functions.space_to_underscore(os.path.splitext(os.path.basename(re.sub(r'.*:', '', yaml_filename)))[0]) + "_" + lang_combo[1] + ".xlf"
-                xliff = ET.Element('xliff')
-                xliff.set('xmlns', 'urn:oasis:names:tc:xliff:document:1.2')
-                xliff.set('version', '1.2')
-                indexno = 1
-                the_file = ET.SubElement(xliff, 'file')
-                the_file.set('id', 'f1')
-                the_file.set('original', yaml_filename)
-                the_file.set('xml:space', 'preserve')
-                the_file.set('source-language', lang_combo[0])
-                the_file.set('target-language', lang_combo[1])
-                body = ET.SubElement(the_file, 'body')
-                for item in translation_list:
-                    transunit = ET.SubElement(body, 'trans-unit')
-                    transunit.set('id', str(indexno))
-                    transunit.set('xml:space', 'preserve')
-                    source = ET.SubElement(transunit, 'source')
-                    source.set('xml:space', 'preserve')
-                    target = ET.SubElement(transunit, 'target')
-                    target.set('xml:space', 'preserve')
-                    last_elem = None
-                    for (elem, i) in ((source, 0), (target, 1)):
-                        if len(item[i]) == 0:
-                            elem.text = ''
-                        elif len(item[i]) == 1 and item[i][0][1] == 0:
-                            elem.text = item[i][0][0]
-                        else:
-                            for part in item[i]:
-                                if part[1] == 0:
-                                    if last_elem is None:
-                                        if elem.text is None:
-                                            elem.text = ''
-                                        elem.text += part[0]
-                                    else:
-                                        if last_elem.tail is None:
-                                            last_elem.tail = ''
-                                        last_elem.tail += part[0]
-                                else:
-                                    mrk = ET.SubElement(elem, 'mrk')
-                                    mrk.set('xml:space', 'preserve')
-                                    mrk.set('mtype', 'protected')
-                                    mrk.text = part[0]
-                                    last_elem = mrk
-                    indexno += 1
-                temp_file.write(ET.tostring(xliff))
-                temp_file.close()
-                xliff_files.append([temp_file, xlf_filename])
-        elif filetype == 'XLIFF 2.0':
-            for question in interview.all_questions:
-                if not hasattr(question, 'translations'):
-                    continue
-                language = question.language
-                if language == '*':
-                    language = interview_source.language
-                if language == '*':
-                    language = DEFAULT_LANGUAGE
-                if language == tr_lang:
-                    continue
-                question_id = question.name
-                lang_combo = (language, tr_lang)
-                if lang_combo not in translations:
-                    translations[lang_combo] = {}
-                filename = question.from_source.get_name()
-                if filename not in translations[lang_combo]:
-                    translations[lang_combo][filename] = {}
-                if question_id not in translations[lang_combo][filename]:
-                    translations[lang_combo][filename][question_id] = []
-                for item in question.translations:
-                    if item in seen:
-                        continue
-                    if item in tr_cache and language in tr_cache[item] and tr_lang in tr_cache[item][language]:
-                        tr_text = str(tr_cache[item][language][tr_lang]['tr_text'])
-                    else:
-                        tr_text = ''
-                    orig_mako = mako_parts(item)
-                    tr_mako = mako_parts(tr_text)
-                    translations[lang_combo][filename][question_id].append([orig_mako, tr_mako])
-                    seen.add(item)
-            for lang_combo, translations_by_filename in translations.items():
-                temp_file = tempfile.NamedTemporaryFile(suffix='.xlf', delete=False)
-                if len(translations) > 1:
-                    xlf_filename = docassemble.base.functions.space_to_underscore(os.path.splitext(os.path.basename(re.sub(r'.*:', '', yaml_filename)))[0]) + "_" + lang_combo[0] + "_" + lang_combo[1] + ".xlf"
-                else:
-                    xlf_filename = docassemble.base.functions.space_to_underscore(os.path.splitext(os.path.basename(re.sub(r'.*:', '', yaml_filename)))[0]) + "_" + lang_combo[1] + ".xlf"
-                xliff = ET.Element('xliff')
-                xliff.set('xmlns', 'urn:oasis:names:tc:xliff:document:2.0')
-                xliff.set('version', '2.0')
-                xliff.set('srcLang', lang_combo[0])
-                xliff.set('trgLang', lang_combo[1])
-                file_index = 1
-                indexno = 1
-                for filename, translations_by_question in translations_by_filename.items():
-                    the_file = ET.SubElement(xliff, 'file')
-                    the_file.set('id', 'f' + str(file_index))
-                    the_file.set('original', filename)
-                    the_file.set('xml:space', 'preserve')
-                    for question_id, translation_list in translations_by_question.items():
-                        unit = ET.SubElement(the_file, 'unit')
-                        unit.set('id', question_id)
-                        for item in translation_list:
-                            segment = ET.SubElement(unit, 'segment')
-                            segment.set('id', str(indexno))
-                            segment.set('xml:space', 'preserve')
-                            source = ET.SubElement(segment, 'source')
-                            source.set('xml:space', 'preserve')
-                            target = ET.SubElement(segment, 'target')
-                            target.set('xml:space', 'preserve')
-                            last_elem = None
-                            for (elem, i) in ((source, 0), (target, 1)):
-                                if len(item[i]) == 0:
-                                    elem.text = ''
-                                elif len(item[i]) == 1 and item[i][0][1] == 0:
-                                    elem.text = item[i][0][0]
-                                else:
-                                    for part in item[i]:
-                                        if part[1] == 0:
-                                            if last_elem is None:
-                                                if elem.text is None:
-                                                    elem.text = ''
-                                                elem.text += part[0]
-                                            else:
-                                                if last_elem.tail is None:
-                                                    last_elem.tail = ''
-                                                last_elem.tail += part[0]
-                                        else:
-                                            mrk = ET.SubElement(elem, 'mrk')
-                                            mrk.set('xml:space', 'preserve')
-                                            mrk.set('translate', 'no')
-                                            mrk.text = part[0]
-                                            last_elem = mrk
-                            indexno += 1
-                    file_index += 1
-                temp_file.write(ET.tostring(xliff))
-                temp_file.close()
-                xliff_files.append([temp_file, xlf_filename])
-        else:
-            raise("That's not a valid filetype for a translation file")
-        if len(xliff_files) == 1:
-            response = send_file(xliff_files[0][0].name, mimetype='application/xml', as_attachment=True, attachment_filename=xliff_files[0][1])
-        else:
-            zip_file = tempfile.NamedTemporaryFile(suffix='.zip', delete=False)
-            zip_file_name = docassemble.base.functions.space_to_underscore(os.path.splitext(os.path.basename(re.sub(r'.*:', '', yaml_filename)))[0]) + "_" + tr_lang + ".zip"
-            with zipfile.ZipFile(zip_file, mode='w') as zf:
-                for item in xliff_files:
-                    info = zipfile.ZipInfo(item[1])
-                    with open(item[0].name, 'rb') as fp:
-                        zf.writestr(info, fp.read())
-                zf.close()
-            response = send_file(zip_file.name, mimetype='application/xml', as_attachment=True, attachment_filename=zip_file_name)
-        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
-        return response
     raise("That's not a valid filetype for a translation file")
