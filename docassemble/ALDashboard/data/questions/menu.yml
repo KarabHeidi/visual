@@ -42,6 +42,8 @@ buttons:
     image: file-word
   - Validate translation files: ${ interview_url(i=user_info().package + ":validate_translation.yml", reset=1) }
     image: language
+  - Prepare translation files: ${ interview_url(i=user_info().package + ":generate_translation.yml", reset=1) }
+    image: language
   - Validate an attachment fields block: ${ interview_url(i=user_info().package + ":validate_attachment.yml", reset=1) }
     image: paperclip
   - PDF tools:  ${ interview_url(i=user_info().package + ":pdf_wrangling.yml", reset=1) }
