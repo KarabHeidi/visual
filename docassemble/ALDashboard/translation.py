@@ -297,9 +297,11 @@ def translation_file(yaml_filename:str, tr_lang:str ) -> Translation:
                 worksheet.write_string(row, 4, language, text)
                 worksheet.write_string(row, 5, tr_lang, text)
                 mako = mako_parts(item)
-                for phrase in mako:
-                    if phrase[1] == 0:
-                        untranslated_text += phrase[0]
+                
+                if not tr_text:
+                    for phrase in mako:
+                        if phrase[1] == 0:
+                            untranslated_text += phrase[0]
 
                 if len(mako) == 0: # Can this case occur? Not in tests
                     worksheet.write_string(row, 6, '', wholefixed)
