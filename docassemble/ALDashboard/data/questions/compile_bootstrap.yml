@@ -1,0 +1,131 @@
+---
+metadata:
+  title: Compile Bootstrap Themes
+  sessions are unique: True
+  required privileges:
+    - admin
+    - developer
+  temporary session: True
+---
+include:
+  - docassemble.ALToolbox:display_template.yml
+---
+objects:
+  - output_file: DAFile
+---
+id: interview order block
+mandatory: True
+code: |
+  start_screen
+  installed
+  upload_choice
+  compiled
+  done
+---
+code: |
+  bootstrap_dir = "/tmp/bootstrap-5.2.3/"
+---
+need:
+  - bootstrap_dir
+code: |
+  # Should be a background task
+  import requests, zipfile, io
+  import subprocess
+  from pathlib import Path
+  # https://stackoverflow.com/a/14260592
+  p = Path(bootstrap_dir)
+  if not p.is_dir():
+      r = requests.get("https://github.com/twbs/bootstrap/archive/refs/tags/v5.2.3.zip")
+      z = zipfile.ZipFile(io.BytesIO(r.content))
+      z.extractall("/tmp/")
+      z.close()
+      del z
+      subprocess.run(["npm", "install", "--prefix", bootstrap_dir])
+  installed = True
+---
+need:
+  - bootstrap_dir
+  - upload_choice
+  - output_file
+code: |
+  import shutil, uuid, os, subprocess
+  from pathlib import Path
+  file_name = uuid.uuid4()
+  full_path = bootstrap_dir + f"scss/{file_name}.scss"
+  if upload_choice == "type_out":
+    with open(full_path, "w") as text_to_file:
+      text_to_file.write(file_text)
+  else: # upload_file
+    shutil.copy(uploaded_file.path(), bootstrap_dir + f"scss/{file_name}.scss")
+  compile_output = subprocess.run(["npm", "run", "css-compile", "--prefix", bootstrap_dir], capture_output=True)
+  os.remove(full_path)
+  out_path = Path(bootstrap_dir + f"dist/css/{file_name}.css")
+  if not out_path.is_file():
+    error_screen
+  output_file.initialize(filename="custom.css")
+  output_file.copy_into(bootstrap_dir + f"dist/css/{file_name}.css")
+  compiled = True
+---
+id: start-page
+comment: |
+  Mostly here to prevent docassemble from auto downloading bootstrap in the playground / on load
+question: Create a custom theme for Bootstrap
+subquestion: |
+  This interview will let you create a custom bootstrap theme, compiling it down into a single
+  CSS file that you can include in your docassemble projects.
+
+  For more information, see [our tutorial on making a custom bootstrap theme](https://suffolklitlab.org/legal-tech-class/docs/practical-guide-docassemble/theming-docassemble#creating-a-custom-theme-from-source-instead-of-with-a-theme-generator).
+continue button field: start_screen
+---
+id: file-upload
+question: What file do you want to make a theme from?
+subquestion: |
+  It should include an `@import "bootstrap"` in it to actually include all of the bootstrap code.
+fields:
+  - How do you want to provide the file?: upload_choice
+    datatype: radio
+    choices:
+      - Upload file: upload_file
+      - Type it out here: type_out
+  - SCSS file: uploaded_file
+    datatype: file
+    accept: |
+      "text/x-sass,text/x-scss,.sass,.scss"
+    show if:
+      variable: upload_choice
+      is: "upload_file"
+  - note: |
+      Type the contents of your bootstrap theme below
+    show if:
+      variable: upload_choice
+      is: type_out
+  - no label: file_text
+    input type: area
+    rows: 15
+    show if:
+      variable: upload_choice
+      is: type_out
+---
+template: output_template
+subject: Bootstrap CSS File
+content: |
+  ${ output_file.slurp() }
+---
+event: error_screen
+question: We weren't able to compile your SCSS
+subquestion: |
+  Bootstrap returned this output when we tried to create your Bootstrap CSS file.
+
+  <pre>
+  ${ compile_output.stderr.decode() }
+  </pre>
+---
+event: done
+id: done
+question: Your file is compiled!
+subquestion: |
+  You can view and copy your file, or download it directly by right clicking the link to save it as a CSS file.
+
+  ${ display_template(output_template, copy=True, collapse=True) }
+
+  [Right click to 'Save link as...'](${output_file.url_for()})
