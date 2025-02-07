@@ -9,6 +9,11 @@ metadata:
     - admin
     - developer
 ---
+image sets:
+  svg:
+    images:
+      bootstrap: bootstrap.svg
+---
 features: 
   css: al_dashboard.css
 ---
@@ -49,4 +54,4 @@ buttons:
   - PDF tools:  ${ interview_url(i=user_info().package + ":pdf_wrangling.yml", reset=1) }
     image: file-pdf
   - Compile a custom Bootstrap theme: ${ interview_url(i=user_info().package + ":compile_bootstrap.yml", reset=1) }
-    image: file-code
+    image: bootstrap
