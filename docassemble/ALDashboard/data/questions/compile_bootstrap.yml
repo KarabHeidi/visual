@@ -69,7 +69,8 @@ code: |
 id: start-page
 comment: |
   Mostly here to prevent docassemble from auto downloading bootstrap in the playground / on load
-question: Create a custom theme for Bootstrap
+question: |
+  Create a custom theme for Bootstrap
 subquestion: |
   This interview will let you create a custom bootstrap theme, compiling it down into a single
   CSS file that you can include in your docassemble projects.
@@ -78,7 +79,8 @@ subquestion: |
 continue button field: start_screen
 ---
 id: file-upload
-question: What file do you want to make a theme from?
+question: |
+  What file do you want to make a theme from?
 subquestion: |
   It should include an `@import "bootstrap"` in it to actually include all of the bootstrap code.
 fields:
@@ -105,6 +107,21 @@ fields:
     show if:
       variable: upload_choice
       is: type_out
+    default: |
+        $white: #ffffff;
+        $blue: #25dec6;
+        
+        $theme-colors: (
+            "light":      #d8e2a5,
+            "dark":       #1b1b1b,
+            "primary":    #25dec6,
+            "secondary":  #375b5a,
+            "info":       #d74d72,
+            "success":    #0cb545,
+            "warning":    #f4ca0b,
+            "danger":     #fa043c,
+        );
+        @import "bootstrap";
 ---
 template: output_template
 subject: Bootstrap CSS File
@@ -122,7 +139,8 @@ subquestion: |
 ---
 event: done
 id: done
-question: Your file is compiled!
+question: |
+  Your file is compiled!
 subquestion: |
   You can view and copy your file, or download it directly by right clicking the link to save it as a CSS file.
 
