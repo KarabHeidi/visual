@@ -9,6 +9,11 @@ metadata:
     - admin
     - developer
 ---
+image sets:
+  svg:
+    images:
+      bootstrap: bootstrap.svg
+---
 features: 
   css: al_dashboard.css
 ---
@@ -23,7 +28,7 @@ Subquestion: |
 field: dashboard
 buttons:
   - Admin only - manage users: ${ interview_url(i=user_info().package + ":manage_users.yml", reset=1) }
-    image: users-cog    
+    image: users-cog
   - Admin only - stats: ${ interview_url(i="docassemble.InterviewStats:data/questions/stats.yml", reset=1) }
     image: chart-bar
   - Install assembly line: ${ interview_url(i=user_info().package + ":install_assembly_line.yml", reset=1) }
@@ -35,9 +40,9 @@ buttons:
   - Package scanner: ${ interview_url(i=user_info().package + ":package_scanner.yml", reset=1) }
     image: search
   - View answer files: ${ interview_url(i=user_info().package + ":list_sessions.yml", reset=1) }
-    image: file-alt  
+    image: file-alt
   - Generate a review screen draft: ${ interview_url(i=user_info().package + ":review_screen_generator.yml", reset=1) }
-    image: pencil-alt    
+    image: pencil-alt
   - Validate docx template: ${ interview_url(i=user_info().package + ":validate_docx.yml", reset=1) }
     image: file-word
   - Validate translation files: ${ interview_url(i=user_info().package + ":validate_translation.yml", reset=1) }
@@ -48,3 +53,5 @@ buttons:
     image: paperclip
   - PDF tools:  ${ interview_url(i=user_info().package + ":pdf_wrangling.yml", reset=1) }
     image: file-pdf
+  - Compile a custom Bootstrap theme: ${ interview_url(i=user_info().package + ":compile_bootstrap.yml", reset=1) }
+    image: bootstrap
