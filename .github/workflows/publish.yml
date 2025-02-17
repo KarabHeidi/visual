@@ -11,3 +11,4 @@ jobs:
       with:
         PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
         VERSION_TO_PUBLISH: ${{ env.GITHUB_REF_NAME }}
+        TEAMS_BUMP_WEBHOOK: ${{ secrets.TEAMS_BUMP_WEBHOOK }}
