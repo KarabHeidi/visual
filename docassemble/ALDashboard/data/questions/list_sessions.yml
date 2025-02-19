@@ -39,13 +39,13 @@ question: |
 subquestion: |
   
   % for interview in sessions_list:
-  * <a href="${ interview_url(i=interview['filename'], session=interview['key']) }">
-      ${ interviews.get(interview['filename'],{'title': interview['filename']}).get('title') }
+  * <a href="${ interview_url(i=interview.filename, session=interview.key) }">
+      ${ interviews.get(interview.filename,{'title': interview.filename}).get('title') }
     </a>
-    (Modified ${ format_date(interview['modtime']) }), on page **${ interview['num_keys'] }**
-      * [View variables](${ interview_url_action('view_session_variables', session_id=interview['key']) })
+    (Modified ${ format_date(interview.modtime) }), on page **${ interview.num_keys }**
+      * [View variables](${ interview_url_action('view_session_variables', session_id=interview.key) })
   % endfor
 ---
 event: view_session_variables
 code: |
-  json_response(get_session_variables(filename, action_argument('session_id'),  simplify=True))
+  json_response(get_session_variables(filename, action_argument('session_id'), simplify=True))

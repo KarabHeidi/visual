@@ -180,7 +180,7 @@ def speedy_get_sessions(user_id: int = None, filename: str = None) -> List[Tuple
         user_id = None
 
     with db.connect() as con:
-        rs = con.execute(get_sessions_query, user_id=user_id, filename=filename)
+        rs = con.execute(get_sessions_query, {"user_id":user_id, "filename":filename})
     sessions = []
     for session in rs:
         sessions.append(session)
