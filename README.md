@@ -1,4 +1,6 @@
-# Backend Configuration Tool
+# ALDashboard: a docassemble Admin and Configuration Tool
+
+[![PyPI version](https://badge.fury.io/py/docassemble.ALDashboard.svg)](https://badge.fury.io/py/docassemble.ALDashboard)
 
 A single pane of glass that centralizes some tedious Docassemble admin configuration tasks
 
