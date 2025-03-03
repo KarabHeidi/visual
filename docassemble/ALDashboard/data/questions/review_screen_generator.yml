@@ -90,7 +90,7 @@ code: |
                     {"Language": f"{ object_name }.language"},
                   ]
                   )
-          elif "[i]" in next(iter(field.values())):
+          elif isinstance( (val := next(iter(field.values()))), str ) and "[i]" in val:
             # log(next(iter(field.values())), "success")
             obj_match = name_without_index_match.match(next(iter(field.values())))
             if obj_match:
