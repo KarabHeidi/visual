@@ -131,7 +131,7 @@ def speedy_get_users() -> List[Tuple[int, str]]:
     return [tuple(user) for user in the_users]
 
 
-def get_users_and_name() -> List[Tuple[int, str, str]]:
+def get_users_and_name() -> List[Tuple[int, str, str, str]]:
     users = UserModel.query.with_entities(
         UserModel.id, UserModel.email, UserModel.first_name, UserModel.last_name
     )

@@ -28,7 +28,7 @@ code: |
 code: |
   user_lookup = {}
   for user in get_users_and_name():
-    user_lookup[user[0]] = user['email']
+    user_lookup[user[0]] = user[3]
 ---
 id: select user
 question: |
@@ -38,7 +38,7 @@ fields:
     datatype: integer
     input type: combobox
     code: |
-      [{user[0]: f"{user['first_name']} {user['last_name']} {user['email']}"} for user in get_users_and_name()]
+      [{user[0]: f"{user[1]} {user[2]} {user[3]}"} for user in get_users_and_name()]
     exclude:
       - "2"
     # User ID 2 is the "cron" user and should not be managed here        
