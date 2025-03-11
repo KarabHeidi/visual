@@ -39,3 +39,15 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module="xlsxwriter.*"
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module="ruamel.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module="pandas"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module="flask"
+ignore_missing_imports = true
