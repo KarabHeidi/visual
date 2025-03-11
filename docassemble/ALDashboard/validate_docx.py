@@ -1,3 +1,4 @@
+# mypy: disable-error-code="override, assignment"
 from jinja2 import Undefined, DebugUndefined, ChainableUndefined
 from jinja2.utils import missing
 from docxtpl import DocxTemplate
@@ -12,7 +13,7 @@ __all__ = ['CallAndDebugUndefined', 'get_jinja_errors', 'Environment', 'BaseLoad
 class CallAndDebugUndefined(DebugUndefined):
     """Handles Jinja2 undefined errors by printing the name of the undefined variable.
     Extended to handle callable methods.
-    """      
+    """
     def __call__(self, *pargs, **kwargs):
         return self
       
@@ -35,16 +36,17 @@ class DASkipUndefined(ChainableUndefined):
     def __str__(self) -> str:
         return ''
 
-    def __call__(self, *pargs, **kwargs)->"DASkipUndefined":
+    # type: ignore
+    def __call__(self, *args, **kwargs)->"DASkipUndefined":
         return self
 
-    __getitem__ = __getattr__ = __call__
+    __getitem__ = __getattr__ = __call__ # type: ignore
 
     def __eq__(self, *pargs) -> bool:
         return False
         
     # need to return a bool type
-    __bool__ = __ne__ = __le__ = __lt__ = __gt__ = __ge__ = __nonzero__ = __eq__
+    __bool__ = __ne__ = __le__ = __lt__ = __gt__ = __ge__ = __nonzero__ = __eq__ # type: ignore
 
     # let undefined variables work in for loops
     def __iter__(self, *pargs)->"DASkipUndefined":
@@ -60,14 +62,14 @@ class DASkipUndefined(ChainableUndefined):
     __len__ = __int__
     
     # need to return a float type
-    def __float__(self, *pargs)->float:
+    def __float__(self, *args)->float:
         return 0.0
     
     # need to return complex type
-    def __complex__(self, *pargs)->complex:
+    def __complex__(self, *args)->complex:
         return 0j
 
-    def __add__(self, *pargs, **kwargs)->str:
+    def __add__(self, *args, **kwargs)->str:
         return self.__str__()
 
     # type can be anything. we want it to work with `str()` function though
@@ -76,7 +78,7 @@ class DASkipUndefined(ChainableUndefined):
     __radd__ = __mul__ = __rmul__ = __div__ = __rdiv__ = \
         __truediv__ = __rtruediv__ = __floordiv__ = __rfloordiv__ = \
         __mod__ = __rmod__ = __pos__ = __neg__ = __pow__ = __rpow__ = \
-        __sub__ = __rsub__= __hash__ = __add__ 
+        __sub__ = __rsub__= __hash__ = __add__ # type: ignore
     
     
 def get_jinja_errors(the_file:DAFile, env=None)->str:
@@ -84,7 +86,7 @@ def get_jinja_errors(the_file:DAFile, env=None)->str:
   Returns a string with the errors, if any.
   """
   if not env:
-    env = Environment(loader=BaseLoader,undefined=CallAndDebugUndefined)
+    env = Environment(loader=BaseLoader(),undefined=CallAndDebugUndefined)
   
   docx_template = DocxTemplate(the_file.path())
   
@@ -94,6 +96,7 @@ def get_jinja_errors(the_file:DAFile, env=None)->str:
     the_xml = re.sub(r'({[\%\{].*?[\%\}]})', fix_quotes, the_xml)
     the_xml = docx_template.patch_xml(the_xml)
     docx_template.render({}, jinja_env=env)
+    return ""
   except jinja2.exceptions.TemplateSyntaxError as the_error:
     errmess = str(the_error)
     if hasattr(the_error, 'docx_context'):

@@ -40,7 +40,7 @@ import xlsxwriter
 
 from docassemble.base.util import DAFile
 from docassemble.webapp.server import mako_parts
-from typing import NamedTuple
+from typing import NamedTuple, Dict
 DEFAULT_LANGUAGE = "en"
 
 __all__ = [
@@ -78,7 +78,7 @@ def translation_file(yaml_filename:str, tr_lang:str ) -> Translation:
     interview_source.update()
     interview_source.translating = True
     interview = interview_source.get_interview()
-    tr_cache = {}
+    tr_cache: Dict = {}
     if len(interview.translations) > 0:
         for item in interview.translations:
             if item.lower().endswith(".xlsx"):
@@ -134,14 +134,16 @@ def translation_file(yaml_filename:str, tr_lang:str ) -> Translation:
                                 if source.text:
                                     orig_text += source.text
                                 for mrk in source:
-                                    orig_text += mrk.text
+                                    if mrk.text:
+                                        orig_text += mrk.text
                                     if mrk.tail:
                                         orig_text += mrk.tail
                             for target in transunit.iter('{urn:oasis:names:tc:xliff:document:1.2}target'):
                                 if target.text:
                                     tr_text += target.text
                                 for mrk in target:
-                                    tr_text += mrk.text
+                                    if mrk.text:
+                                        tr_text += mrk.text
                                     if mrk.tail:
                                         tr_text += mrk.tail
                             if orig_text == '' or tr_text == '':
@@ -167,14 +169,16 @@ def translation_file(yaml_filename:str, tr_lang:str ) -> Translation:
                                     if source.text:
                                         orig_text += source.text
                                     for mrk in source:
-                                        orig_text += mrk.text
+                                        if mrk.text:
+                                            orig_text += mrk.text
                                         if mrk.tail:
                                             orig_text += mrk.tail
                                 for target in transunit.iter('{urn:oasis:names:tc:xliff:document:2.0}target'):
                                     if target.text:
                                         tr_text += target.text
                                     for mrk in target:
-                                        tr_text += mrk.text
+                                        if mrk.text:
+                                            tr_text += mrk.text
                                         if mrk.tail:
                                             tr_text += mrk.tail
                                 if orig_text == '' or tr_text == '':
@@ -406,4 +410,4 @@ def translation_file(yaml_filename:str, tr_lang:str ) -> Translation:
         workbook.close()
         untranslated_words = len(re.findall(r"\w+", untranslated_text))        
         return Translation(output_file, untranslated_words,untranslated_segments, total_rows)
-    raise("That's not a valid filetype for a translation file")
+    raise ValueError("That's not a valid filetype for a translation file")

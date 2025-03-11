@@ -4,7 +4,7 @@ from github import Github  # PyGithub
 
 # db is a SQLAlchemy Engine
 from sqlalchemy.sql import text
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Optional
 import docassemble.webapp.worker
 from docassemble.webapp.server import (
     user_can_edit_package,
@@ -128,7 +128,7 @@ def speedy_get_users() -> List[Tuple[int, str]]:
     """
     the_users = UserModel.query.with_entities(UserModel.id, UserModel.email).all()
 
-    return [tuple(user) for user in the_users]
+    return [user for user in the_users]
 
 
 def get_users_and_name() -> List[Tuple[int, str, str]]:
@@ -139,7 +139,7 @@ def get_users_and_name() -> List[Tuple[int, str, str]]:
     return users
 
 
-def speedy_get_sessions(user_id: int = None, filename: str = None) -> List[Tuple]:
+def speedy_get_sessions(user_id: Optional[int] = None, filename: Optional[str] = None) -> List[Tuple]:
     """
     Return a lsit of the most recent 500 sessions, optionally tied to a specific user ID.
 

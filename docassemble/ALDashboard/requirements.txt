@@ -1,0 +1,2 @@
+types-setuptools
+types-pycurl

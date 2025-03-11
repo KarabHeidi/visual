@@ -1,0 +1,41 @@
+[tool.black]
+extend-exclude = '(__init__.py|setup.py)'
+
+[tool.mypy]
+# global options
+exclude = '''(?x)(
+    ^setup.py$
+  )'''
+
+# per-module options:
+[[tool.mypy.overrides]]
+module = "docassemble.webapp.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "docassemble.base.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "pycountry"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "backports.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "certifi.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module ="docxtpl.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module="github.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module="xlsxwriter.*"
+ignore_missing_imports = true
