@@ -205,7 +205,7 @@ class ALPackageInstaller(DAObject):
         github_user = github.get_user()
         try:
             # Ensure the token has the right permissions
-            scopes = github_user.raw_headers["x-oauth-scopes"].split(", ")
+            scopes = str(github_user.raw_headers["x-oauth-scopes"]).split(", ")
             if not "repo" in scopes and not "public_repo" in scopes:
                 self.errors.appendObject(
                     template_name="github_permissions_error", scopes=scopes
