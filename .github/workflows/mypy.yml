@@ -1,0 +1,12 @@
+name: Run python only mypy and unit tests
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  test-assemblyline:
+    runs-on: ubuntu-latest
+    name: Run python only mypy and unit tests
+    steps:
+      - uses: SuffolkLITLab/ALActions/pythontests@main

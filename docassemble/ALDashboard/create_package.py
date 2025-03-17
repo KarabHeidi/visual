@@ -243,31 +243,31 @@ This directory is used to store templates.
     try:
       zip_obj.write(f,os.path.join(pkg_path_deep_prefix, os.path.basename(f)))
     except:
-      log('Unable to add file ' + repr(file))        
+      log('Unable to add file ' + repr(f))        
   # Templates
   for f in folders_and_files.get('templates',[]):
     try:
       zip_obj.write(f,os.path.join(pkg_path_templates_prefix, os.path.basename(f)))
     except:
-      log('Unable to add file ' + repr(file))
+      log('Unable to add file ' + repr(f))
   # sources
   for f in folders_and_files.get('sources',[]):
     try:
       zip_obj.write(f,os.path.join(pkg_path_sources_prefix, os.path.basename(f)))
     except:
-      log('Unable to add file ' + repr(file))
+      log('Unable to add file ' + repr(f))
   # static
   for f in folders_and_files.get('static',[]):
     try:
       zip_obj.write(f,os.path.join(pkg_path_static_prefix, os.path.basename(f)))
     except:
-      log('Unable to add file ' + repr(file))
+      log('Unable to add file ' + repr(f))
   # questions
   for f in folders_and_files.get('questions',[]):
     try:
       zip_obj.write(f,os.path.join(pkg_path_questions_prefix, os.path.basename(f)))
     except:
-      log('Unable to add file ' + repr(file))
+      log('Unable to add file ' + repr(f))
   
   zip_obj.close()
   zip_download.commit()

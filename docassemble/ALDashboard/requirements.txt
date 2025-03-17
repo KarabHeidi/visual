@@ -1,0 +1,6 @@
+docassemble.base>=1.3
+docassemble.webapp
+types-setuptools
+types-pycurl
+types-requests
+mypy
