@@ -64,6 +64,7 @@ code: |
     error_screen
   output_file.initialize(filename="custom.css")
   output_file.copy_into(bootstrap_dir + f"dist/css/{file_name}.css")
+  output_file.commit()
   compiled = True
 ---
 id: start-page
