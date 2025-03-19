@@ -1,4 +1,8 @@
 ---
+metadata:
+  required privileges:
+    - admin
+---
 include:
   - nav.yml
 ---
