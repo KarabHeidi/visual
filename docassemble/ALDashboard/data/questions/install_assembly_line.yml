@@ -1,10 +1,10 @@
 ---
+include:
+  - nav.yml
+---
 metadata:
   required privileges:
     - admin
----
-include:
-  - nav.yml
 ---
 imports:
   - requests
