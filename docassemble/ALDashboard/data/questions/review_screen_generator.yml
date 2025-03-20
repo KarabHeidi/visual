@@ -1,10 +1,11 @@
+---
+include:
+  - nav.yml
+---
 metadata:
   title: |
     Generate a draft review screen
   temporary session: True
----
-include:
-  - nav.yml
 ---
 mandatory: True
 code: |
