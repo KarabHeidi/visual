@@ -1,10 +1,10 @@
 ---
+include:
+  - nav.yml
+---
 metadata:
   title: |
     Validate DOCX Template
----
-include:
-  - nav.yml
 ---
 modules:
   - .validate_docx
