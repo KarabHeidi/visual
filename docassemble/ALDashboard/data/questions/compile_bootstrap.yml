@@ -1,4 +1,8 @@
 ---
+include:
+  - docassemble.ALToolbox:display_template.yml
+  - nav.yml
+---
 metadata:
   title: Compile Bootstrap Themes
   sessions are unique: True
@@ -6,9 +10,6 @@ metadata:
     - admin
     - developer
   temporary session: True
----
-include:
-  - docassemble.ALToolbox:display_template.yml
 ---
 objects:
   - output_file: DAFile

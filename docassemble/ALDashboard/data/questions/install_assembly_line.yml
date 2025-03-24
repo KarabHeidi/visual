@@ -2,6 +2,10 @@
 include:
   - nav.yml
 ---
+metadata:
+  required privileges:
+    - admin
+---
 imports:
   - requests
 ---
