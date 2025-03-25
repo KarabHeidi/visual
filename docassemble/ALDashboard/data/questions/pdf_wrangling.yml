@@ -54,7 +54,7 @@ code: |
   base_name = source_pdf[0].filename
 ---
 code: |
-  formfyxer.parse_form(source_pdf[0].path(), title=base_name, jur="MA", normalize=1,rewrite=1)
+  formfyxer.parse_form(source_pdf[0].path(), title=base_name, jur="MA", normalize=1,rewrite=1, tools_token=get_config("assembly line", {}).get("tools.suffolklitlab.org api key"))
   source_pdf[0].commit()
   process_field_normalization = True  
 ---
@@ -63,7 +63,7 @@ code: |
   formfyxer.auto_add_fields(source_pdf[0].path(), new_pdf.path())
   
   # also normalize field names after newly recognizing them
-  formfyxer.parse_form(new_pdf.path(), title=base_name, jur="MA", normalize=1, rewrite=1)
+  formfyxer.parse_form(new_pdf.path(), title=base_name, jur="MA", normalize=1, rewrite=1, tools_token=get_config("assembly line", {}).get("tools.suffolklitlab.org api key"))
   
   new_pdf.commit()
   process_field_recognition = True
