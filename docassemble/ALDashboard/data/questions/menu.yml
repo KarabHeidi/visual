@@ -33,8 +33,10 @@ buttons:
     image: chart-bar
   - Install assembly line: ${ interview_url(i=user_info().package + ":install_assembly_line.yml", reset=1) }
     image: tasks
+  - Verify API keys: ${ interview_url(i=user_info().package + ":api_test.yml", reset=1) }
+    image: terminal
   - Install packages: ${ interview_url(i=user_info().package + ":install_packages.yml", reset=1) }
-    image: cogs    
+    image: cogs
   - Update packages: ${ interview_url(i=user_info().package + ":update_packages.yml", reset=1) }
     image: sync
   - Package scanner: ${ interview_url(i=user_info().package + ":package_scanner.yml", reset=1) }
