@@ -13,6 +13,7 @@ metadata:
 ---
 objects:
   - output_file: DAFile
+  - output_scss: DAFile.using(filename="custom.scss")
 ---
 id: interview order block
 mandatory: True
@@ -24,7 +25,7 @@ code: |
   done
 ---
 code: |
-  bootstrap_dir = "/tmp/bootstrap-5.2.3/"
+  bootstrap_dir = "/tmp/bootstrap-5.3.0/"
 ---
 need:
   - bootstrap_dir
@@ -36,12 +37,13 @@ code: |
   # https://stackoverflow.com/a/14260592
   p = Path(bootstrap_dir)
   if not p.is_dir():
-      r = requests.get("https://github.com/twbs/bootstrap/archive/refs/tags/v5.2.3.zip")
+      r = requests.get("https://github.com/twbs/bootstrap/archive/refs/tags/v5.3.0.zip")
       z = zipfile.ZipFile(io.BytesIO(r.content))
       z.extractall("/tmp/")
       z.close()
       del z
       subprocess.run(["npm", "install", "--prefix", bootstrap_dir])
+      subprocess.run(["npm", "install", "npm-sass", "--prefix", bootstrap_dir])
   installed = True
 ---
 need:
@@ -52,12 +54,13 @@ code: |
   import shutil, uuid, os, subprocess
   from pathlib import Path
   file_name = uuid.uuid4()
-  full_path = bootstrap_dir + f"scss/{file_name}.scss"
+  full_path = os.path.join(bootstrap_dir, "scss", f"{file_name}.scss")
   if upload_choice == "type_out":
     with open(full_path, "w") as text_to_file:
       text_to_file.write(file_text)
+    output_scss.copy_into(full_path)
   else: # upload_file
-    shutil.copy(uploaded_file.path(), bootstrap_dir + f"scss/{file_name}.scss")
+    shutil.copy(uploaded_file.path(), os.path.join(bootstrap_dir, "scss", f"{file_name}.scss"))
   compile_output = subprocess.run(["npm", "run", "css-compile", "--prefix", bootstrap_dir], capture_output=True)
   os.remove(full_path)
   out_path = Path(bootstrap_dir + f"dist/css/{file_name}.css")
@@ -85,6 +88,9 @@ question: |
   What file do you want to make a theme from?
 subquestion: |
   It should include an `@import "bootstrap"` in it to actually include all of the bootstrap code.
+
+  You can use [https://huemint.com/bootstrap-basic/](https://huemint.com/bootstrap-basic/)
+  to generate the SCSS code.
 fields:
   - How do you want to provide the file?: upload_choice
     datatype: radio
@@ -124,6 +130,9 @@ fields:
             "danger":     #fa043c,
         );
         @import "bootstrap";
+validation code: |
+  if upload_choice == "type_out" and not '@import "bootstrap";' in file_text:
+    validation_error('You need to include the exact text \'@import "bootstrap";\' at the end of your SCSS block', field="file_text")
 ---
 template: output_template
 subject: Bootstrap CSS File
@@ -148,4 +157,10 @@ subquestion: |
 
   ${ display_template(output_template, copy=True, collapse=True) }
 
-  [Right click to 'Save link as...'](${output_file.url_for()})
+  [Bootstrap Theme file](${output_file.url_for(attachment=True)})
+
+  % if upload_choice == "type_out":
+  [SCSS source file](${ output_scss.url_for(attachment=True) })
+  % else:
+  [SCSS source file](${ uploaded_file.url_for(attachment=True) })
+  % endif
