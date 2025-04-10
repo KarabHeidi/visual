@@ -43,7 +43,6 @@ code: |
       z.close()
       del z
       subprocess.run(["npm", "install", "--prefix", bootstrap_dir])
-      subprocess.run(["npm", "install", "npm-sass", "--prefix", bootstrap_dir])
   installed = True
 ---
 need:
@@ -81,6 +80,9 @@ subquestion: |
   CSS file that you can include in your docassemble projects.
 
   For more information, see [our tutorial on making a custom bootstrap theme](https://suffolklitlab.org/legal-tech-class/docs/practical-guide-docassemble/theming-docassemble#creating-a-custom-theme-from-source-instead-of-with-a-theme-generator).
+
+  You will need to have a recent version of Docassemble's "system" OS to use this tool. (at least 1.4.43). This may require
+  an upgrade to the [Docker container](https://suffolklitlab.org/legal-tech-class/docs/practical-guide-docassemble/maintaining-docassemble#updates-to-the-docassemble-container).
 continue button field: start_screen
 ---
 id: file-upload
