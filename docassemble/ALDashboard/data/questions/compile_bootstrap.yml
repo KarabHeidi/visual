@@ -162,7 +162,7 @@ subquestion: |
   [Bootstrap Theme file](${output_file.url_for(attachment=True)})
 
   % if upload_choice == "type_out":
-  [SCSS source file](${ output_scss.url_for(attachment=True) })
+  [:download: SCSS source file](${ output_scss.url_for(attachment=True) })
   % else:
-  [SCSS source file](${ uploaded_file.url_for(attachment=True) })
+  [:download: SCSS source file](${ uploaded_file.url_for(attachment=True) })
   % endif
