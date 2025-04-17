@@ -19,7 +19,7 @@ fields:
   - Filename: filename
     required: False
     code: |
-      [{interview: interviews[interview].get('title')} for interview in interviews]
+      sorted([{interview: interviews[interview].get('title')} for interview in interviews], key=lambda y: next(iter(y.values()), ''))
   - User (leave blank to view all sessions): chosen_user
     required: False
     datatype: integer

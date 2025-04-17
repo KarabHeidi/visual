@@ -122,13 +122,13 @@ def da_write_config(data: Dict):
     restart_all()
 
 
-def speedy_get_users() -> List[Tuple[int, str]]:
+def speedy_get_users() -> List[Dict[int, str]]:
     """
     Return a list of all users in the database. Possibly faster than get_user_list().
     """
     the_users = UserModel.query.with_entities(UserModel.id, UserModel.email).all()
 
-    return [user for user in the_users]
+    return [{user[0]: user[1]} for user in the_users]
 
 
 def get_users_and_name() -> List[Tuple[int, str, str, str]]:
