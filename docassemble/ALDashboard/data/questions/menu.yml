@@ -55,5 +55,5 @@ buttons:
     image: paperclip
   - PDF tools:  ${ interview_url(i=user_info().package + ":pdf_wrangling.yml", reset=1) }
     image: file-pdf
-  - Compile a custom Bootstrap theme: ${ interview_url(i=user_info().package + ":compile_bootstrap.yml", reset=1) }
+  - Compile Bootstrap theme: ${ interview_url(i=user_info().package + ":compile_bootstrap.yml", reset=1) }
     image: bootstrap

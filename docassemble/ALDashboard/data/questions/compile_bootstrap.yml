@@ -119,17 +119,17 @@ fields:
       is: type_out
     default: |
         $white: #ffffff;
-        $blue: #25dec6;
-        
+        $blue: #0d6efd;
+
         $theme-colors: (
-            "light":      #d8e2a5,
-            "dark":       #1b1b1b,
-            "primary":    #25dec6,
-            "secondary":  #375b5a,
-            "info":       #d74d72,
-            "success":    #0cb545,
-            "warning":    #f4ca0b,
-            "danger":     #fa043c,
+            "light":      #f8f9fa,
+            "dark":       #212529,
+            "primary":    #0d6fed,
+            "secondary":  #6c757,
+            "info":       #0dcaf0,
+            "success":    #198754,
+            "warning":    #ffc107,
+            "danger":     #dc3545,
         );
         @import "bootstrap";
 validation code: |
