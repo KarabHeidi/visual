@@ -116,7 +116,6 @@ code: |
 id: rename fields
 question: |
   Rename fields
-labels above fields: True  
 fields: 
   - code: |
       [{item[0]: f"rename_fields['{item[0]}']", "default" : item[0], "label above field": True, "required": False} for item in source_pdf[0].get_pdf_fields()]
