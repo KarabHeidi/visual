@@ -1,0 +1,95 @@
+---
+include:
+  - nav.yml
+---
+metadata:
+  required privileges:
+    - admin
+---
+modules:
+  - .aldashboard
+---
+mandatory: True
+code: |
+  the_font_files
+  if install_fonts_task.ready():
+    ending_screen
+  else:
+    waiting_screen
+---
+id: waiting screen
+event: waiting_screen
+question: |
+  Installing fonts
+subquestion: |
+  <div class="spinner-container d-flex justify-content-center">
+  <div class="spinner-border" role="status">
+    <span class="visually-hidden">Installing fonts...</span>
+  </div>
+  </div>
+
+  This screen will reload every
+  ten seconds until the installation is complete.
+reload: True    
+---
+id: ending screen
+event: ending_screen
+question: |
+  % if install_fonts_task.failed():
+  Installation failed
+  % else:
+  Installation successful
+  % endif
+subquestion: |
+  % if install_fonts_task.failed():
+  ${ install_fonts_task.ready() }
+  % endif
+---
+code: |
+  install_fonts_task = background_action("install_fonts_event")
+---
+event: install_fonts_event
+code: |
+  install_fonts(the_font_files)
+  background_response()
+---
+id: install fonts
+question: |
+  Upload the fonts you want to install
+subquestion: |
+  You can upload multiple fonts at once. The fonts will be installed on the server and will be available for use in your interviews.
+
+  ${ action_button_html(url_action("list_fonts_task"), label="View installed fonts", id_tag="view_fonts") }
+
+  [TARGET displayed_fonts]
+
+fields:
+  - Font files: the_font_files
+    datatype: files
+    #accept: |
+    #  "application/font-sfnt, .TTF, .ttf, font/*"
+validation code: |
+  for f in the_font_files:
+    if not ".ttf" in f.filename.lower():
+      validation_error("You need to upload a TrueType font", field="the_font_files")
+script: |
+  <script type="text/javascript">
+      $('#view_fonts').on('click', function() {
+          $(this).prop('disabled', true);
+      });
+  </script>
+---
+code: |
+  list_fonts_task = background_action("display_fonts", 'backgroundresponse')
+---
+event: display_fonts
+code: |
+  installed_fonts = f"""
+    <div class="alert alert-info">
+      <h4>Installed fonts</h4>
+        { list_installed_fonts() }
+    </div>
+  """
+
+  background_response(target='displayed_fonts', content=installed_fonts)
+  #background_response(target="displayed_fonts", content="ABC")
