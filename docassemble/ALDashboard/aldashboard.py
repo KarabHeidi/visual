@@ -271,7 +271,9 @@ def list_installed_fonts():
     """
     List the fonts installed on the server.
     """
-    output = subprocess.run(["fc-list"], capture_output=True, text=True).stdout
+    fc_list = subprocess.run(["fc-list"], stdout=subprocess.PIPE)
+    output = subprocess.run(["sort"], stdin=fc_list.stdout, capture_output=True, text=True).stdout
+    fc_list.stdout.close()
     return output
 
 
