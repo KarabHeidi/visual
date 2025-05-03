@@ -72,12 +72,6 @@ validation code: |
   for f in the_font_files:
     if not ".ttf" in f.filename.lower():
       validation_error("You need to upload a TrueType font", field="the_font_files")
-script: |
-  <script type="text/javascript">
-      $('#view_fonts').on('click', function() {
-          $(this).prop('disabled', true);
-      });
-  </script>
 ---
 code: |
   list_fonts_task = background_action("display_fonts", 'backgroundresponse')
@@ -92,4 +86,3 @@ code: |
   """
 
   background_response(target='displayed_fonts', content=installed_fonts)
-  #background_response(target="displayed_fonts", content="ABC")
