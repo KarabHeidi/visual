@@ -256,7 +256,7 @@ def install_fonts(the_font_files: DAFileList):
     
     # save the DAFile to /var/www/.fonts
     for f in the_font_files:
-        shutil.copyfile(f.path(), "/var/www/.fonts/" + f.filename)
+        shutil.copyfile(f.path(), "/var/www/.fonts/" + werkzeug.secure_filename(f.filename))
 
     output = ""
     output += subprocess.run(["fc-cache", "-f", "-v"], capture_output=True, text=True).stdout
