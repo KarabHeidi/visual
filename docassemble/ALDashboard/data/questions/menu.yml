@@ -57,3 +57,5 @@ buttons:
     image: file-pdf
   - Compile Bootstrap theme: ${ interview_url(i=user_info().package + ":compile_bootstrap.yml", reset=1) }
     image: bootstrap
+  - Install fonts: ${ interview_url(i=user_info().package + ":install_fonts.yml", reset=1)}
+    image: font

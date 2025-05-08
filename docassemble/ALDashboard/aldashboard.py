@@ -1,3 +1,6 @@
+import os
+import shutil
+import subprocess
 from docassemble.webapp.users.models import UserModel
 from docassemble.webapp.db_object import init_sqlalchemy
 from github import Github  # PyGithub
@@ -20,10 +23,20 @@ from docassemble.webapp.server import (
 )
 from docassemble.base.config import daconfig
 from docassemble.webapp.backend import cloud
-from docassemble.base.util import log, DAFile, DAObject, DAList, word
+from docassemble.base.util import (
+    log,
+    DAFile,
+    DAObject,
+    DAList,
+    word,
+    DAFileList,
+    get_config,
+    space_to_underscore,
+)
 from ruamel.yaml import YAML
 from ruamel.yaml.compat import StringIO
 import re
+import werkzeug
 
 db = init_sqlalchemy()
 
@@ -39,6 +52,8 @@ __all__ = [
     "ALPackageInstaller",
     "get_package_info",
     "install_from_pypi",
+    "install_fonts",
+    "list_installed_fonts",
 ]
 
 
@@ -139,7 +154,9 @@ def get_users_and_name() -> List[Tuple[int, str, str, str]]:
     return users
 
 
-def speedy_get_sessions(user_id: Optional[int] = None, filename: Optional[str] = None) -> List[Tuple]:
+def speedy_get_sessions(
+    user_id: Optional[int] = None, filename: Optional[str] = None
+) -> List[Tuple]:
     """
     Return a lsit of the most recent 500 sessions, optionally tied to a specific user ID.
 
@@ -180,7 +197,7 @@ def speedy_get_sessions(user_id: Optional[int] = None, filename: Optional[str] =
         user_id = None
 
     with db.connect() as con:
-        rs = con.execute(get_sessions_query, {"user_id":user_id, "filename":filename})
+        rs = con.execute(get_sessions_query, {"user_id": user_id, "filename": filename})
     sessions = []
     for session in rs:
         sessions.append(session)
@@ -230,7 +247,7 @@ class ErrorList(DAList):
 
 class ErrorLikeObject(DAObject):
     """
-    An object with a `template_name` that identifieds the DALazyTemplate that will
+    An object with a `template_name` that identifies the DALazyTemplate that will
     show its error. It can contain any other attributes so its template can access them
     as needed. DAObject doesn't seem to be enough to allow template definition.
     """
@@ -239,6 +256,52 @@ class ErrorLikeObject(DAObject):
         super().init(*pargs, **kwargs)
         # `unknown_error` can be a default template for unexpected errors to use
         self.template_name = kwargs.get("template_name", "unknown_error")
+
+
+def install_fonts(the_font_files: DAFileList):
+    """
+    Install fonts to the server and restart both supervisor and unoconv.
+    """
+    # create the /var/www/.fonts directory if it doesn't exist
+    if not os.path.exists("/var/www/.fonts"):
+        os.makedirs("/var/www/.fonts")
+
+    # save the DAFile to /var/www/.fonts
+    for f in the_font_files:
+        shutil.copyfile(
+            f.path(), "/var/www/.fonts/" + werkzeug.utils.secure_filename(f.filename)
+        )
+
+    output = ""
+    output += subprocess.run(
+        ["fc-cache", "-f", "-v"], capture_output=True, text=True
+    ).stdout
+    output += subprocess.run(
+        ["supervisorctl", "restart", "uwsgi"], capture_output=True, text=True
+    ).stdout
+    output += subprocess.run(
+        ["supervisorctl", "start", "reset"], capture_output=True, text=True
+    ).stdout
+    if get_config("enable unoconv"):
+        output += subprocess.run(
+            ["supervisorctl", "-s", "http://localhost:9001", "restart", "unoconv"],
+            capture_output=True,
+            text=True,
+        ).stdout
+
+    return output
+
+
+def list_installed_fonts():
+    """
+    List the fonts installed on the server.
+    """
+    fc_list = subprocess.run(["fc-list"], stdout=subprocess.PIPE)
+    output = subprocess.run(
+        ["sort"], stdin=fc_list.stdout, capture_output=True, text=True
+    ).stdout
+    fc_list.stdout.close()
+    return output
 
 
 #  select userdict.filename, num_keys, userdictkeys.user_id, modtime, userdict.key from userdict natural join (select key, max(modtime) as modtime, count(key) as num_keys from userdict group by key) mostrecent left join userdictkeys on userdictkeys.key = userdict.key order by modtime desc;
