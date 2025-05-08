@@ -23,10 +23,20 @@ from docassemble.webapp.server import (
 )
 from docassemble.base.config import daconfig
 from docassemble.webapp.backend import cloud
-from docassemble.base.util import log, DAFile, DAObject, DAList, word, DAFileList, get_config
+from docassemble.base.util import (
+    log,
+    DAFile,
+    DAObject,
+    DAList,
+    word,
+    DAFileList,
+    get_config,
+    space_to_underscore,
+)
 from ruamel.yaml import YAML
 from ruamel.yaml.compat import StringIO
 import re
+import werkzeug
 
 db = init_sqlalchemy()
 
@@ -144,7 +154,9 @@ def get_users_and_name() -> List[Tuple[int, str, str, str]]:
     return users
 
 
-def speedy_get_sessions(user_id: Optional[int] = None, filename: Optional[str] = None) -> List[Tuple]:
+def speedy_get_sessions(
+    user_id: Optional[int] = None, filename: Optional[str] = None
+) -> List[Tuple]:
     """
     Return a lsit of the most recent 500 sessions, optionally tied to a specific user ID.
 
@@ -185,7 +197,7 @@ def speedy_get_sessions(user_id: Optional[int] = None, filename: Optional[str] =
         user_id = None
 
     with db.connect() as con:
-        rs = con.execute(get_sessions_query, {"user_id":user_id, "filename":filename})
+        rs = con.execute(get_sessions_query, {"user_id": user_id, "filename": filename})
     sessions = []
     for session in rs:
         sessions.append(session)
@@ -253,26 +265,41 @@ def install_fonts(the_font_files: DAFileList):
     # create the /var/www/.fonts directory if it doesn't exist
     if not os.path.exists("/var/www/.fonts"):
         os.makedirs("/var/www/.fonts")
-    
+
     # save the DAFile to /var/www/.fonts
     for f in the_font_files:
-        shutil.copyfile(f.path(), "/var/www/.fonts/" + werkzeug.secure_filename(f.filename))
+        shutil.copyfile(
+            f.path(), "/var/www/.fonts/" + werkzeug.utils.secure_filename(f.filename)
+        )
 
     output = ""
-    output += subprocess.run(["fc-cache", "-f", "-v"], capture_output=True, text=True).stdout
-    output += subprocess.run(["supervisorctl", "restart", "uwsgi"], capture_output=True, text=True).stdout
-    output += subprocess.run(["supervisorctl", "start", "reset"], capture_output=True, text=True).stdout
+    output += subprocess.run(
+        ["fc-cache", "-f", "-v"], capture_output=True, text=True
+    ).stdout
+    output += subprocess.run(
+        ["supervisorctl", "restart", "uwsgi"], capture_output=True, text=True
+    ).stdout
+    output += subprocess.run(
+        ["supervisorctl", "start", "reset"], capture_output=True, text=True
+    ).stdout
     if get_config("enable unoconv"):
-        output += subprocess.run(["supervisorctl", "-s", "http://localhost:9001", "restart", "unoconv"], capture_output=True, text=True).stdout
+        output += subprocess.run(
+            ["supervisorctl", "-s", "http://localhost:9001", "restart", "unoconv"],
+            capture_output=True,
+            text=True,
+        ).stdout
 
     return output
+
 
 def list_installed_fonts():
     """
     List the fonts installed on the server.
     """
     fc_list = subprocess.run(["fc-list"], stdout=subprocess.PIPE)
-    output = subprocess.run(["sort"], stdin=fc_list.stdout, capture_output=True, text=True).stdout
+    output = subprocess.run(
+        ["sort"], stdin=fc_list.stdout, capture_output=True, text=True
+    ).stdout
     fc_list.stdout.close()
     return output
 
