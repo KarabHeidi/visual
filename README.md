@@ -26,6 +26,15 @@ configuration, like this:
 
 `install packages api key: xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx`
 
+If you want the ALDashboard to be a dropdown option for admins and developers, add the following to the configuration before your `install packages api key`: 
+
+    administrative interviews:
+      - interview: docassemble.ALDashboard:data/questions/menu.yml
+        title: Dashboard
+        required privileges:
+          - admin
+          - developer
+
 ## Some screenshots
 
 ### Main page
