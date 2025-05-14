@@ -109,6 +109,10 @@ question: |
   Here is the new PDF
 subquestion: |
   [:file-pdf: ${ new_pdf.filename }](${ new_pdf.url_for() })
+right: |
+  #### Preview of the new PDF labels
+
+  <iframe src="${ new_field_preview_pdf.url_for() }" height="400"></iframe>
 ---
 code: |
   rename_fields = {}
@@ -138,7 +142,19 @@ attachment:
     [
       {field[0]: "Yes" if field[4] == "/Btn" else field[0]} 
       for field in source_pdf[0].get_pdf_fields()
-    ]   
+    ]
+---
+attachment:
+  variable name: new_field_preview_pdf
+  editable: False
+  pdf template file:
+    code: |
+      new_pdf
+  code: |
+    [
+      {field[0]: "Yes" if field[4] == "/Btn" else field[0]} 
+      for field in new_pdf.get_pdf_fields()
+    ]
 ---
 code: |
   new_pdf.initialize(filename=base_name)
