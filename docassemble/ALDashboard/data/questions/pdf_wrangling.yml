@@ -128,7 +128,7 @@ right: |
   
   <iframe src="${ field_preview_pdf.url_for() }" height="400"></iframe>
 
-  _note_: This preview will not update with live changes.
+  _note_: This preview will update on the next screen.
   
 continue button field: display_rename_field_choices
 ---
