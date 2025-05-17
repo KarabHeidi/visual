@@ -1,5 +1,6 @@
 ---
 include:
+  - docassemble.ALToolbox:display_template.yml
   - nav.yml
 ---
 metadata:
@@ -25,6 +26,9 @@ fields:
   - Create revisit screens for lists: build_revisit_blocks
     datatype: yesno
     default: True
+  - Point section blocks to review screen: point_sections_to_review
+    datatype: yesno
+    default: True
 ---
 code: |
   import ruamel.yaml as yaml
@@ -42,6 +46,7 @@ code: |
   attributes_list = {}
   questions_temp = []
   generic_question_blocks = []
+  sections_temp = []
   for doc in yaml_parsed:
     if doc:
       question = {"question": doc.get('question',"").strip() }
@@ -115,31 +120,47 @@ code: |
           fields_temp.append({doc.get('question',""): doc.get('field'), 'datatype': 'radio' })
       elif 'objects' in doc:
         objects_temp.extend(doc["objects"])
+      elif 'sections' in doc:
+        sections_temp.extend([next(iter(sec.keys()), [""]) for sec in doc["sections"]])
       question["fields"] = fields_temp
       if question["fields"]:
         questions_temp.append(question)
   objects = objects_temp
   questions = questions_temp
+  section_events = sections_temp
   del objects_temp
   del questions_temp
+  del sections_temp
 ---
 code: |
+  REVIEW_EVENT_NAME = "review_form"
   review_fields_temp = []
   revisit_screens = []
   tables = []
+  sections = []
+  if point_sections_to_review:
+    for sec in section_events:
+      sections.append({
+        "event": sec,
+        "code": REVIEW_EVENT_NAME,
+      })
   if build_revisit_blocks:
     for obj in objects:
       obj_name = next(iter(obj.keys()), [""])
+      obj_type = next(iter(obj.values()), [""])
+      is_skippable_type = any(map(lambda val: obj_type.startswith(val), ["ALDocument.", "ALDocumentBundle.", "DAStaticFile."]))
+      if is_skippable_type:
+        continue
       review = {}
       review["Edit"] = f"{ obj_name }.revisit"
       review["button"] = f"**{ obj_name.replace('_', ' ').title() }**\n\n% for item in { obj_name }:\n- ${{ item }}\n% endfor"
       review_fields_temp.append(review)
       revisit_screen = {
         "id": f"revisit { obj_name }",
-        "event": f"{ obj_name }.revisit",
+        "continue button field": f"{ obj_name }.revisit",
         "question": f"Edit your answers about { obj_name.replace('_', ' ').title() }",
       }
-      revisit_screen["subquestion"] = f"${{ {obj_name}.table }}"
+      revisit_screen["subquestion"] = f"${{ {obj_name}.table }}\n\n${{ {obj_name}.add_action() }}"
       revisit_screens.append(revisit_screen)
       if obj_name in attributes_list:
         tables.append({
@@ -148,7 +169,11 @@ code: |
           "columns": [
             {next(iter(attribute.values())).split('.')[-1] if next(iter(attribute.keys())) == "no label" else next(iter(attribute.keys())): f"row_item.{ next(iter(attribute.values())).split('.')[-1] } if hasattr(row_item, '{next(iter(attribute.values())).split('.')[-1]}') else ''"}
             for attribute in attributes_list[obj_name]
-          ]
+          ],
+          "edit": [
+            next(iter(attribute.values())).split('.')[-1]
+            for attribute in attributes_list[obj_name]
+          ],
         })
   for question in questions:
     if len(question["fields"]):
@@ -156,25 +181,29 @@ code: |
       first_label_pair = next((pair for pair in fields[0].items() if pair[0] not in not_labels), ("",""))
       review = {}
       review['Edit'] = first_label_pair[1] # This will be the trigger variable in edit button
-      review["button"] = f"**{ question['question'] }**\n\n"
+      # Bolding with `**` over multiple lines doesn't work; use <strong> instead
+      if '\n' in question['question']:
+        review["button"] = f"<strong>{question['question'] }</strong>\n\n"
+      else:
+        review["button"] = f"**{ question['question'] }**\n\n"
       for field in fields:
         label_pair = next((pair for pair in field.items() if pair[0] not in not_labels), None)
         if label_pair:
-          if label_pair[0] == "no label":
-            if field.get('datatype') in ['yesno','yesnoradio','yesnowide']:
-              review['button'] += f"${{ word(yesno({ label_pair[1] })) }}\n\n"
-            else:
-              review['button'] += f"${{ showifdef('{label_pair[1]}') }}\n\n"
-          else:          
-            if field.get('datatype') in ['yesno','yesnoradio','yesnowide']:
-              review['button'] += f"{label_pair[0] or ''}: ${{ word(yesno({ label_pair[1] })) }}\n\n"
-            else:
-              review['button'] += f"{label_pair[0] or ''}: ${{ showifdef('{label_pair[1]}') }}\n\n"
+          if label_pair[0] != "no label":
+            review['button'] += f"{label_pair[0] or ''}: "
+
+          if field.get('datatype') in ['yesno','yesnoradio','yesnowide']:
+            review['button'] += f"${{ word(yesno({ label_pair[1] })) }}\n\n"
+          elif field.get('datatype') == 'currency':
+            review['button'] += f"${{ currency(showifdef('{label_pair[1]}')) }}\n\n"
+          else:
+            review['button'] += f"${{ showifdef('{label_pair[1]}') }}\n\n"
       review["button"] = review["button"].strip() + "\n"
       review_fields_temp.append(review)
-  review_yaml = [
+  review_yaml = sections + [
     {
       "id": "review screen",
+      "event": REVIEW_EVENT_NAME,
       "question": "Review your answers",
       'review': review_fields_temp
     },
@@ -187,10 +216,24 @@ code: |
   # import pyyaml
   # from yaml import dump
   from pyaml import dump_all
-  review_yaml_dumped = dump_all(review_yaml, string_val_style='|')
+  review_yaml_dumped = dump_all(review_yaml, string_val_style='|', sort_keys=False)
+---
+template: review_yaml_template
+content: |
+  ${ review_yaml_dumped }
 ---
 event: results
 question: |
 subquestion: |  
-  ${ indent(review_yaml_dumped,4) } 
+  ${ display_template(review_yaml_template, classname="make_code", copy=True) }
+css: |
+  <style>
+  .make_code {
+    font-family: var(--bs-font-monospace);
+    font-size: 12px;
+  }
+  .make_code.scrollable-panel {
+    max-height: 2000px;
+  }
+  </style>
   
