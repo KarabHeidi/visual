@@ -59,3 +59,5 @@ buttons:
     image: bootstrap
   - Install fonts: ${ interview_url(i=user_info().package + ":install_fonts.yml", reset=1)}
     image: font
+  - Feedback on server: ${ interview_url(i="docassemble.GithubFeedbackForm:browse_feedback_sessions.yml", reset=1)}
+    image: comments
