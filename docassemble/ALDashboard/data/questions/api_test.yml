@@ -1,0 +1,95 @@
+---
+include:
+  - docassemble.ALToolbox:display_template.yml
+  - nav.yml
+---
+metadata:
+  title: Test API keys
+  sessions are unique: True
+  required privileges:
+    - admin
+    - developer
+  temporary session: True
+---
+objects:
+  - my_person: Individual
+---
+mandatory: True
+code: |
+  address_to_complete
+  if my_person.address.address:
+    my_person.address.geocode()
+  if my_person.email:
+    email_success = send_email(to=my_person, subject="Test message from Docassemble", body="Test message body. Thanks for testing with ALDashboard.")
+  if my_person.phone_number:
+    sms_success = send_sms(to=my_person, body="Test message from Docassemble. Thanks for testing with ALDashboard.")
+  api_results  
+---
+question: |
+  Test an API key
+fields:
+  - note: |
+      ---
+      Google Maps
+
+      Server API key: `${ get_config("google", {}).get("api key") }` [BR]
+      HTTP/S API key: `${ get_config("google", {}).get("google maps api key") }`
+  - Address auto complete: address_to_complete
+    address autocomplete: True
+    required: False
+  - "Address geocoding (enter at least a street address to trigger)": my_person.address.address
+    required: False
+  - Unit: my_person.address.unit
+    required: False
+  - City: my_person.address.city
+    required: False
+  - State: my_person.address.state
+    required: False
+  - Zip: my_person.address.zip
+    required: False
+  - County: my_person.address.county
+    required: False
+  - note: |
+      ---
+      Email sending
+
+      ```
+      ${ get_config("mail") }
+      ```
+  - Enter an email to get a test message: my_person.email
+    datatype: email
+    required: False
+  - note: |
+      ---
+      SMS sending
+
+      ```
+      ${ get_config("twilio") }
+      ```
+  - Enter a phone number to get a test message: my_person.phone_number
+    datatype: phone
+    required: False
+---
+event: api_results
+question: |
+  Results
+subquestion: |
+  % if my_person.address.address:
+  Geocoded: ${ my_person.address.was_geocoded_successfully() } [BR]
+  % if my_person.address.was_geocoded_successfully():
+  Long address: ${ my_person.address.norm_long.on_one_line() } [BR]
+  % endif
+  % if hasattr(my_person.address, "county"):
+  County: ${ my_person.address.county }
+  % endif
+  % endif
+
+  % if my_person.email:
+  Email success: ${ email_success }
+  % endif
+
+  % if my_person.phone_number:
+  SMS success: ${ sms_success }
+  % endif
+
+  Use the back button to try again

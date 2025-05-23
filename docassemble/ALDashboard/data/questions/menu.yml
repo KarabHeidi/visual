@@ -33,8 +33,10 @@ buttons:
     image: chart-bar
   - Install assembly line: ${ interview_url(i=user_info().package + ":install_assembly_line.yml", reset=1) }
     image: tasks
+  - Verify API keys: ${ interview_url(i=user_info().package + ":api_test.yml", reset=1) }
+    image: terminal
   - Install packages: ${ interview_url(i=user_info().package + ":install_packages.yml", reset=1) }
-    image: cogs    
+    image: cogs
   - Update packages: ${ interview_url(i=user_info().package + ":update_packages.yml", reset=1) }
     image: sync
   - Package scanner: ${ interview_url(i=user_info().package + ":package_scanner.yml", reset=1) }
@@ -53,5 +55,9 @@ buttons:
     image: paperclip
   - PDF tools:  ${ interview_url(i=user_info().package + ":pdf_wrangling.yml", reset=1) }
     image: file-pdf
-  - Compile a custom Bootstrap theme: ${ interview_url(i=user_info().package + ":compile_bootstrap.yml", reset=1) }
+  - Compile Bootstrap theme: ${ interview_url(i=user_info().package + ":compile_bootstrap.yml", reset=1) }
     image: bootstrap
+  - Install fonts: ${ interview_url(i=user_info().package + ":install_fonts.yml", reset=1)}
+    image: font
+  - Feedback on server: ${ interview_url(i="docassemble.GithubFeedbackForm:browse_feedback_sessions.yml", reset=1)}
+    image: comments
