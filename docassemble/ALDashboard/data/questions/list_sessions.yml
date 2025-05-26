@@ -15,9 +15,12 @@ code: |
 ---
 question: |
   What interview do you want to view sessions for?  
+subquestion: |
+  Pick an interview from the list below, or type a filename like: `docassemble.playground1:data/questions/interview.yml`
 fields:
   - Filename: filename
     required: False
+    datatype: combobox
     code: |
       sorted([{interview: interviews[interview].get('title')} for interview in interviews], key=lambda y: next(iter(y.values()), ''))
   - User (leave blank to view all sessions): chosen_user
@@ -26,26 +29,51 @@ fields:
     input type: combobox
     code: |
       speedy_get_users()
+  - Filter out interviews that are on the first page: filter_step1
+    required: False
+    datatype: yesno 
+    default: True
 ---
 # next((item.get('title') for item in interviews if item.get('filename') == interview['filename']), interview['filename'] )
 ---
 code: |
-  sessions_list = speedy_get_sessions(user_id=chosen_user, filename=filename)
+  sessions_list = speedy_get_sessions(user_id=chosen_user, filename=filename, filter_step1=filter_step1)
 ---
 mandatory: True
 event: load_answer
 question: |
-  Recently generated sessions for ${ filename }
+  Recently started sessions for ${ interviews.get(filename, {"title": filename}).get('title', filename) }
 subquestion: |
-  
+  <table class="table">
+    <thead>
+      <tr>
+        <th>Session ID</th>
+        <th>User</th>
+        <th>Modified</th>
+        <th>Page</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+
   % for interview in sessions_list:
-  * <a href="${ interview_url(i=interview.filename, session=interview.key) }">
-      ${ interviews.get(interview.filename,{'title': interview.filename}).get('title') }
-    </a>
-    (Modified ${ format_date(interview.modtime) }), on page **${ interview.num_keys }**
-      * [View variables](${ interview_url_action('view_session_variables', session_id=interview.key) })
+  <tr>
+    <td>
+        ${ interview.key }
+    </td>
+    <td>${ interview.user_id }</td>
+    <td>${ format_date(interview.modtime, "MMM d YYYY") }</td>
+    <td>${ interview.num_keys }</td>
+    <td>
+      <a href="${ interview_url(i=interview.filename, session=interview.key) }">
+        <i class="fa-solid fa-folder-open"></i>&nbsp;Join</a>
+    <br/>
+    <a href="${ interview_url_action('view_session_variables', session_id=interview.key) }"><i class="fa-solid fa-eye"></i>&nbsp;Vars</a>
+    </td>
+  </tr>
   % endfor
+  </table>
+question back button: True
 ---
 event: view_session_variables
 code: |
-  json_response(get_session_variables(filename, action_argument('session_id'), simplify=True))
+  response(binaryresponse=json.dumps(dashboard_get_session_variables(session_id=action_argument('session_id'), filename=filename)).encode('utf-8'), content_type="application/json", response_code=200)

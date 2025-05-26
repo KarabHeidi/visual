@@ -20,9 +20,11 @@ from docassemble.webapp.server import (
     restart_all,
     install_pip_package,
     get_package_info,
+    get_session_variables,
 )
 from docassemble.base.config import daconfig
 from docassemble.webapp.backend import cloud
+from docassemble.base.functions import serializable_dict
 from docassemble.base.util import (
     log,
     DAFile,
@@ -31,7 +33,6 @@ from docassemble.base.util import (
     word,
     DAFileList,
     get_config,
-    space_to_underscore,
 )
 from ruamel.yaml import YAML
 from ruamel.yaml.compat import StringIO
@@ -54,6 +55,7 @@ __all__ = [
     "install_from_pypi",
     "install_fonts",
     "list_installed_fonts",
+    "dashboard_get_session_variables",
 ]
 
 
@@ -155,10 +157,12 @@ def get_users_and_name() -> List[Tuple[int, str, str, str]]:
 
 
 def speedy_get_sessions(
-    user_id: Optional[int] = None, filename: Optional[str] = None
+    user_id: Optional[int] = None,
+    filename: Optional[str] = None,
+    filter_step1: bool = True,
 ) -> List[Tuple]:
     """
-    Return a lsit of the most recent 500 sessions, optionally tied to a specific user ID.
+    Return a list of the most recent 500 sessions, optionally tied to a specific user ID.
 
     Each session is a tuple with named columns:
     filename,
@@ -168,41 +172,54 @@ def speedy_get_sessions(
     """
     get_sessions_query = text(
         """
-  SELECT  userdict.filename as filename
-         ,num_keys
-         ,userdictkeys.user_id as user_id
-         ,modtime
-         ,userdict.key as key
-  FROM userdict 
-  NATURAL JOIN 
-  (
-    SELECT  key
-           ,MAX(modtime) AS modtime
-           ,COUNT(key)   AS num_keys
-    FROM userdict
-    GROUP BY  key
-  ) mostrecent
-  LEFT JOIN userdictkeys
-  ON userdictkeys.key = userdict.key
-  WHERE (userdict.user_id = :user_id OR :user_id is null)
-  AND
-  (userdict.filename = :filename OR :filename is null)
-  ORDER BY modtime desc 
-  LIMIT 500;
-  """
+        SELECT userdict.filename as filename,
+            num_keys,
+            userdictkeys.user_id as user_id,
+            modtime,
+            userdict.key as key
+        FROM userdict 
+        NATURAL JOIN 
+        (
+            SELECT key,
+                MAX(modtime) AS modtime,
+                COUNT(key) AS num_keys
+            FROM userdict
+            GROUP BY key
+            HAVING COUNT(key) > 1 OR :filter_step1 = False
+        ) mostrecent
+        LEFT JOIN userdictkeys
+        ON userdictkeys.key = userdict.key
+        WHERE (userdict.user_id = :user_id OR :user_id is null)
+        AND (userdict.filename = :filename OR :filename is null)
+        ORDER BY modtime DESC 
+        LIMIT 500;
+        """
     )
+    # Assuming `filename`, `user_id`, and `filter_step1` are provided elsewhere in your code
     if not filename:
         filename = None  # Explicitly treat empty string as equivalent to None
     if not user_id:  # TODO: verify that 0 is not a valid value for user ID
         user_id = None
 
+    # Ensure filter_step1 is a boolean
+    filter_step1 = bool(filter_step1)
+
     with db.connect() as con:
-        rs = con.execute(get_sessions_query, {"user_id": user_id, "filename": filename})
-    sessions = []
-    for session in rs:
-        sessions.append(session)
+        rs = con.execute(
+            get_sessions_query,
+            {"user_id": user_id, "filename": filename, "filter_step1": filter_step1},
+        )
+    sessions = [session for session in rs]
 
     return sessions
+
+
+def dashboard_get_session_variables(session_id: str, filename: str):
+    """
+    Return the variables and steps for a given session ID and YAML filename in serializable dictionary format.
+    """
+    user_dict = get_session_variables(filename, session_id, secret=None, simplify=False)
+    return serializable_dict(user_dict, include_internal=False)
 
 
 class ALPackageInstaller(DAObject):
