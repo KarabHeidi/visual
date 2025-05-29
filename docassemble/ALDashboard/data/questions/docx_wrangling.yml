@@ -1,0 +1,97 @@
+---
+include:
+  - nav.yml
+---
+modules:
+  - .docx_wrangling
+---
+objects:
+  - new_docx: DAFile
+---
+id: interview order
+mandatory: True
+code: |
+  docx_file
+  ask_about_labels
+  save_changes
+  show_final_docx
+---
+question: |
+  Upload a DOCX file
+subquestion: |
+  We will use GPT-4 to try to add variables in the
+  [AssemblyLine 
+  convention](https://suffolklitlab.org/docassemble-AssemblyLine-documentation/docs/label_variables) 
+  to your DOCX file.
+fields:
+  - DOCX file: docx_file
+    datatype: file
+  - Include custom people names: include_custom_people_names
+    datatype: yesno
+    default: False
+  - Custom people names: custom_people_names_text
+    datatype: area
+    show if: include_custom_people_names
+    help: |
+      Enter a list of custom nouns to use, one per line. Optionally, add 
+      an explanation after each name, separated by a colon. For example:
+      ```
+      agents: people making decisions in healthcare proxy or power of attorney
+      attorneys_in_fact: people granted power of attorney
+      ```
+
+      These names will be used to label variables
+      in the DOCX file.
+---
+code: |
+  if include_custom_people_names:
+    custom_people_names = [tuple(line.split(':')) for line in custom_people_names_text.split('\n')]
+  else:
+    custom_people_names = None
+  draft_labels = get_labeled_docx_runs(docx_file[0].path(), custom_people_names = custom_people_names)
+---
+objects:
+  - final_labels: DAList.using(object_type=DAObject, auto_gather=False, gathered=True)
+---
+code: |
+  import docx
+  original_doc = docx.Document(docx_file[0].path())
+
+  label_question = []
+  for idx, item in enumerate(draft_labels):
+    # Results will be a tuple of paragraph number, run, modified text with label
+    label_question.append({
+      'label': original_doc.paragraphs[item[0]].runs[item[1]].text,
+      'field': f'final_labels[idx].label',
+      'default': item[2],
+    })
+
+  del docx
+  del original_doc
+---
+code: |
+  for idx, item in enumerate(draft_labels):
+    item[2] = final_labels[idx].label
+
+  new_doc_obj = update_docx(docx_file[0].path(), draft_labels)
+
+  new_docx.initialize(filename=docx_file[0].filename)
+  new_doc_obj.save(new_docx.path())
+  new_docx.commit()
+
+  save_changes = True
+---
+continue button field: ask_about_labels
+question: |
+  Review the labels
+subuestion: |
+  On the left is the original text. On the right, you will see the modified
+  text with Jinja2 added. Make any changes you need.
+fields:
+  - code: label_question
+---
+event: show_final_docx
+question: |
+  Here is your new DOCX file
+subquestion: |
+  ${ new_docx }
