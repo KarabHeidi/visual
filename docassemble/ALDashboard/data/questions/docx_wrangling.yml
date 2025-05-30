@@ -12,9 +12,30 @@ id: interview order
 mandatory: True
 code: |
   docx_file
+  if not started_task.ready():
+    waiting_screen
+  show_stats
   ask_about_labels
   save_changes
   show_final_docx
+---
+event: waiting_screen
+question: |
+  Please wait while we process your file
+subquestion: |
+  <div class="spinner-border" role="status">
+    <span class="visually-hidden">Processing...</span>
+  </div>
+reload: True
+---
+continue button field: show_stats
+question: |
+  Your DOCX file has been processed
+subquestion: |
+  GPT-4 found ${ len(draft_labels) } labels in your DOCX file.
+
+  On the next screen, you can review and make any necessary changes
+  to the draft Jinja2 labels.
 ---
 question: |
   Upload a DOCX file
@@ -23,9 +44,14 @@ subquestion: |
   [AssemblyLine 
   convention](https://suffolklitlab.org/docassemble-AssemblyLine-documentation/docs/label_variables) 
   to your DOCX file.
+
+  Your upload can have up to 300 pages, but the result cannot be larger than about 4,000 words. The result will
+  only include the modified paragraphs.
 fields:
   - DOCX file: docx_file
     datatype: file
+    accept: |
+      ".docx, application/vnd.openxmlformats-officedocument.wordprocessingml.document"
   - Include custom people names: include_custom_people_names
     datatype: yesno
     default: False
@@ -44,11 +70,21 @@ fields:
       in the DOCX file.
 ---
 code: |
+  started_task = background_action('task_draft_labels')      
+---
+event: task_draft_labels
+code: |
   if include_custom_people_names:
     custom_people_names = [tuple(line.split(':')) for line in custom_people_names_text.split('\n')]
   else:
     custom_people_names = None
   draft_labels = get_labeled_docx_runs(docx_file[0].path(), custom_people_names = custom_people_names)
+  background_response_action('save_draft_labels', draft_labels=draft_labels)
+---
+event: save_draft_labels
+code: |
+  draft_labels = action_argument('draft_labels')
+  background_response()
 ---
 objects:
   - final_labels: DAList.using(object_type=DAObject, auto_gather=False, gathered=True)
@@ -59,25 +95,50 @@ code: |
 
   label_question = []
   for idx, item in enumerate(draft_labels):
+    new_obj = final_labels.appendObject()
+    new_obj.paragraph = item[0]
+    new_obj.run = item[1]
+    new_obj.draft_label_text = item[2]
+
     # Results will be a tuple of paragraph number, run, modified text with label
     label_question.append({
       'label': original_doc.paragraphs[item[0]].runs[item[1]].text,
-      'field': f'final_labels[idx].label',
+      'field': f'final_labels[{idx}].label',
       'default': item[2],
+      'label above field': True,
+      'grid': 8,
+      'hide if': f'final_labels[{idx}].leave_unchanged'
+    })
+    label_question.append({
+      'label': 'Leave unchanged',
+      'field': f'final_labels[{idx}].leave_unchanged',
+      'datatype': 'yesno',
+      'grid': {
+        'width': 4,
+        'end': True,
+      },
+      'label above field': True,
     })
 
   del docx
   del original_doc
 ---
 code: |
-  for idx, item in enumerate(draft_labels):
-    item[2] = final_labels[idx].label
 
-  new_doc_obj = update_docx(docx_file[0].path(), draft_labels)
+  new_doc_obj = update_docx(
+    docx_file[0].path(), 
+    [
+      (item.paragraph, item.run, item.label, 0) 
+      for item in final_labels 
+      if not item.leave_unchanged
+    ]
+  )
 
   new_docx.initialize(filename=docx_file[0].filename)
   new_doc_obj.save(new_docx.path())
   new_docx.commit()
+
+  del new_doc_obj
 
   save_changes = True
 ---

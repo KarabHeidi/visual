@@ -11,7 +11,7 @@ from docassemble.base.util import get_config
 
 os.environ["OPENAI_API_KEY"] = get_config("openai api key")
 
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Union
 
 __all__ = [
     "get_labeled_docx_runs",
@@ -33,12 +33,12 @@ def add_paragraph_before(paragraph, text):
 
 
 def update_docx(
-    document: docx.Document, modified_runs: List[Tuple[int, int, str, int]]
+    document: Union[docx.Document, str], modified_runs: List[Tuple[int, int, str, int]]
 ) -> docx.Document:
     """Update the document with the modified runs.
 
     Args:
-        document: the docx.Document object
+        document: the docx.Document object, or the path to the DOCX file
         modified_runs: a tuple of paragraph number, run number, the modified text, a question (not used), and whether a new paragraph should be inserted (for conditional text)
 
     Returns:
@@ -49,6 +49,9 @@ def update_docx(
     #
     ## also sort each run in the modified_runs so that the runs are in the correct order
     # modified_runs = sorted(modified_runs, key=lambda x: x[1], reverse=True)
+
+    if isinstance(document, str):
+        document = docx.Document(document)
 
     for paragraph_number, run_number, modified_text, new_paragraph in modified_runs:
         paragraph = document.paragraphs[paragraph_number]
@@ -150,7 +153,8 @@ def get_labeled_docx_runs(
 
         Name Forms:
             users (full name of all users)
-            users[0] (Full name)
+            users[0] (full name of first user)
+            users[0].name.full() (Alternate full name of first user)
             users[0].name.first (First name only)
             users[0].name.middle (Middle name only)
             users[0].name.middle_initial() (First letter of middle name)
@@ -225,6 +229,10 @@ def get_labeled_docx_runs(
 
     encoding = tiktoken.encoding_for_model("gpt-4")
     token_count = len(encoding.encode(role_description + rules + repr(items)))
+    if token_count > 128000:
+        raise Exception(
+            f"Input to OpenAI is too long ({token_count} tokens). Maximum is 128000 tokens."
+        )
 
     response = openai_client.chat.completions.create(
         model="gpt-4-1106-preview",
