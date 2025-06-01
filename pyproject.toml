@@ -51,3 +51,12 @@ ignore_missing_imports = true
 [[tool.mypy.overrides]]
 module="flask"
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module="docx"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module="docx.*"
+ignore_missing_imports = true
+
