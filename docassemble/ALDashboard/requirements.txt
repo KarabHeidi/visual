@@ -4,3 +4,5 @@ types-setuptools
 types-pycurl
 types-requests
 mypy
+openai
+tiktoken
