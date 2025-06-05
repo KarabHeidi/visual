@@ -43,9 +43,11 @@ mandatory: True
 event: load_answer
 question: |
   % if filename:
-  Recently started sessions for ${ interviews.get(filename, {"title": filename}).get('title', filename) }
+  Recently started sessions for ${ nicer_interview_filename(interviews.get(filename, {"title": filename}).get('title', filename)) }
+  % elif chosen_user:
+  Recently started sessions for User ID ${ chosen_user}
   % else:
-  Recently started sessions for ${ chosen_user or "all users"}
+  Recently started sessions for all users
   % endif
 subquestion: |
   <table class="table">
@@ -61,11 +63,11 @@ subquestion: |
 
   % for interview in sessions_list:
   <tr>
-    <td>
+    <td class="text-wrap text-break">
       ${ interview.key }
   % if not filename:
       <br/>
-      ${ interview.filename }
+      ${ nicer_interview_filename(interview.filename) }
   % endif
     </td>
     <td>${ interview.user_id }</td>
