@@ -62,11 +62,11 @@ subquestion: |
   % for interview in sessions_list:
   <tr>
     <td>
-        ${ interview.key }
-        % if not filename:
-        <br/>
-        ${ interview.filename }
-        % endif
+      ${ interview.key }
+  % if not filename:
+      <br/>
+      ${ interview.filename }
+  % endif
     </td>
     <td>${ interview.user_id }</td>
     <td>${ format_date(interview.modtime, "MMM d YYYY") }</td>
