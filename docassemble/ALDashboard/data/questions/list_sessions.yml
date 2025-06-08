@@ -31,7 +31,7 @@ fields:
       speedy_get_users()
   - Filter out interviews that are on the first page: filter_step1
     required: False
-    datatype: yesno 
+    datatype: yesno
     default: True
 ---
 # next((item.get('title') for item in interviews if item.get('filename') == interview['filename']), interview['filename'] )
@@ -42,7 +42,13 @@ code: |
 mandatory: True
 event: load_answer
 question: |
-  Recently started sessions for ${ interviews.get(filename, {"title": filename}).get('title', filename) }
+  % if filename:
+  Recently started sessions for ${ nicer_interview_filename(interviews.get(filename, {"title": filename}).get('title', filename)) }
+  % elif chosen_user:
+  Recently started sessions for User ID ${ chosen_user}
+  % else:
+  Recently started sessions for all users
+  % endif
 subquestion: |
   <table class="table">
     <thead>
@@ -57,8 +63,12 @@ subquestion: |
 
   % for interview in sessions_list:
   <tr>
-    <td>
-        ${ interview.key }
+    <td class="text-wrap text-break">
+      ${ interview.key }
+  % if not filename:
+      <br/>
+      ${ nicer_interview_filename(interview.filename) }
+  % endif
     </td>
     <td>${ interview.user_id }</td>
     <td>${ format_date(interview.modtime, "MMM d YYYY") }</td>
@@ -67,7 +77,7 @@ subquestion: |
       <a href="${ interview_url(i=interview.filename, session=interview.key) }">
         <i class="fa-solid fa-folder-open"></i>&nbsp;Join</a>
     <br/>
-    <a href="${ interview_url_action('view_session_variables', session_id=interview.key) }"><i class="fa-solid fa-eye"></i>&nbsp;Vars</a>
+    <a href="${ interview_url_action('view_session_variables', session_id=interview.key, filename=interview.filename) }"><i class="fa-solid fa-eye"></i>&nbsp;Vars</a>
     </td>
   </tr>
   % endfor
@@ -76,4 +86,4 @@ question back button: True
 ---
 event: view_session_variables
 code: |
-  response(binaryresponse=json.dumps(dashboard_get_session_variables(session_id=action_argument('session_id'), filename=filename)).encode('utf-8'), content_type="application/json", response_code=200)
+  response(binaryresponse=json.dumps(dashboard_get_session_variables(session_id=action_argument('session_id'), filename=action_argument('filename'))).encode('utf-8'), content_type="application/json", response_code=200)
