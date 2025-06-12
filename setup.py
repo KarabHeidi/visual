@@ -54,7 +54,7 @@ setup(name='docassemble.ALDashboard',
       url='https://github.com/SuffolkLITLab/docassemble-ALDashboard',
       packages=find_packages(),
       namespace_packages=['docassemble'],
-      install_requires=['PyGithub>=2.1.1', 'docassemble.ALToolbox', 'openai>=1.0', 'tiktoken'],
+      install_requires=['PyGithub>=2.1.1', 'docassemble.ALToolbox>=0.9.2', 'openai>=1.0', 'tiktoken'],
       zip_safe=False,
       package_data=find_package_data(where='docassemble/ALDashboard/', package='docassemble.ALDashboard'),
      )
