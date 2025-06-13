@@ -5,7 +5,7 @@ include:
 ---
 metadata:
   title: |
-    Generate a draft review screen
+    AL Review Generator
   temporary session: True
 ---
 mandatory: True
@@ -178,26 +178,50 @@ code: |
   for question in questions:
     if len(question["fields"]):
       fields = question["fields"]
-      first_label_pair = next((pair for pair in fields[0].items() if pair[0] not in not_labels), ("",""))
+      first_label_pair = next((pair for pair in fields[0].items() if pair[0] not in not_labels), None)
+      if first_label_pair is None:
+        first_label_pair = (fields[0].get("label", ""), fields[0].get("field", ""))
       review = {}
       review['Edit'] = first_label_pair[1] # This will be the trigger variable in edit button
       # Bolding with `**` over multiple lines doesn't work; use <strong> instead
       if '\n' in question['question']:
-        review["button"] = f"<strong>{question['question'] }</strong>\n\n"
+        review["button"] = f"<strong>\n{question['question'] }\n</strong>\n\n"
       else:
         review["button"] = f"**{ question['question'] }**\n\n"
       for field in fields:
         label_pair = next((pair for pair in field.items() if pair[0] not in not_labels), None)
-        if label_pair:
+        if label_pair is None:
+          label_pair = (field.get("label", ""), field.get("field", ""))
+
+        if label_pair[0]:
+          if field.get("show if"):
+            show_if = field.get("show if")
+            if isinstance(show_if, str):
+              review['button'] += f"% if showifdef('{show_if}'):\n"
+            elif isinstance(show_if, dict) and show_if.get("variable"):
+              var = show_if.get("variable")
+              val = show_if.get("is")
+              if val not in ["False", "True", "false", "true"]:
+                val = f'"{val}"'
+
+              review['button'] += f"% if showifdef('{var}') == {val}:\n"
+          else:
+            show_if = None
+
           if label_pair[0] != "no label":
             review['button'] += f"{label_pair[0] or ''}: "
 
           if field.get('datatype') in ['yesno','yesnoradio','yesnowide']:
-            review['button'] += f"${{ word(yesno({ label_pair[1] })) }}\n\n"
+            review['button'] += f"${{ word(yesno({ label_pair[1] })) }}\n"
           elif field.get('datatype') == 'currency':
-            review['button'] += f"${{ currency(showifdef('{label_pair[1]}')) }}\n\n"
+            review['button'] += f"${{ currency(showifdef('{label_pair[1]}')) }}\n"
           else:
-            review['button'] += f"${{ showifdef('{label_pair[1]}') }}\n\n"
+            review['button'] += f"${{ showifdef('{label_pair[1]}') }}\n"
+
+          if show_if:
+            review['button'] += "% endif\n\n"
+          else:
+            review['button'] += "\n"
       review["button"] = review["button"].strip() + "\n"
       review_fields_temp.append(review)
   review_yaml = sections + [
@@ -210,7 +234,7 @@ code: |
   ] + revisit_screens + tables
 ---
 code: |
-  not_labels = ['datatype','default', 'help', 'min','max','maxlength','minlength','rows','choices','input type','required','hint','code','exclude','none of the above','shuffle','show if','hide if','enable if','disable if','js show if','js hide if','js enable if','js disable if','disable others','note','html','field metadata','accept','validate','address autocomplete']
+  not_labels = ['label','datatype','default', 'help', 'min','max','maxlength','minlength','rows','choices','input type','required','hint','code','exclude','none of the above','shuffle','show if','hide if','enable if','disable if','js show if','js hide if','js enable if','js disable if','disable others','note','html','field', 'field metadata','accept','validate','address autocomplete']
 ---
 code: |
   # import pyyaml
