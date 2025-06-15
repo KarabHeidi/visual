@@ -82,8 +82,8 @@ subquestion: |
 
   For more information, see [our tutorial on making a custom bootstrap theme](https://suffolklitlab.org/legal-tech-class/docs/practical-guide-docassemble/theming-docassemble#creating-a-custom-theme-from-source-instead-of-with-a-theme-generator).
 
-  You will need to have a recent version of Docassemble's "system" OS to use this tool. (at least 1.4.43). This may require
-  an upgrade to the [Docker container](https://suffolklitlab.org/legal-tech-class/docs/practical-guide-docassemble/maintaining-docassemble#updates-to-the-docassemble-container).
+  If your Docassemble "system" version is less than 1.4.43, you will need to upgrade (yours is ${ get_config("system version") }).
+  This requires an upgrade to the [Docker container](https://suffolklitlab.org/legal-tech-class/docs/practical-guide-docassemble/maintaining-docassemble#updates-to-the-docassemble-container).
 continue button field: start_screen
 ---
 id: file-upload
